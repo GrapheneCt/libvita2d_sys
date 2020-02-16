@@ -13,7 +13,7 @@ This library is disigned to be used only with applications running in system mod
 
 ## INITIALIZATION
 
-To initialize vita2d in your application following must be done:
+To initialize vita2d_sys in your application following must be done:
 ```
 void *mspace;
 void *clibm_base;
