@@ -15,7 +15,6 @@ This library is disigned to be used only with applications running in system mod
 
 To initialize vita2d in your application following must be done:
 ```
-...
 void *mspace;
 void *clibm_base;
 SceUID clib_heap = sceKernelAllocMemBlock("ClibHeap", SCE_KERNEL_MEMBLOCK_TYPE_USER_RW_UNCACHE, CLIB_HEAP_SIZE, NULL);
@@ -24,6 +23,5 @@ mspace = sceClibMspaceCreate(clibm_base, CLIB_HEAP_SIZE);
 
 vita2d_clib_pass_mspace(mspace);
 
- vita2d_init();
- ...
+vita2d_init();
 ```
