@@ -7,7 +7,7 @@
 extern void* sceClibMspaceCreate(void* base, uint32_t size);
 
 typedef struct sceAppMgrBudgetInfo {
-	SceSize size;                           //must be 0x88
+	SceSize size;                        //must be 0x88
 	uint32_t mode;                       //2 = Mode_ApplicationA, 3 = Mode_ApplicationB (allow phycont), 4 = Mode_Application (allow 0x0E208060, allow phycont)
 	uint32_t unk_4;
 	uint32_t budgetLPDDR2;          //LPDDR2 budget in bytes
@@ -45,7 +45,7 @@ int main() {
 
 	vita2d_clib_pass_mspace(mspace);
 
-    vita2d_init();
+    	vita2d_init();
 	
 	vita2d_pgf *font = vita2d_load_default_pgf();
 
@@ -59,8 +59,8 @@ int main() {
 
     while (1) {
 
-        vita2d_start_drawing();
-        vita2d_clear_screen();
+        	vita2d_start_drawing();
+        	vita2d_clear_screen();
 
 		if (x == 544)
 			x = 0;
@@ -74,7 +74,7 @@ int main() {
 		vita2d_pgf_draw_text(font, 100, 200, RGBA8(0, 255, 0, 255), 1.5f, mes1);
 
 		vita2d_end_drawing();
-        vita2d_swap_buffers();
+        	vita2d_swap_buffers();
         
 	}
 
