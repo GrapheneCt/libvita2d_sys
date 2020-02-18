@@ -45,6 +45,9 @@ int main() {
 
 	vita2d_clib_pass_mspace(mspace);
 
+	vita2d_set_shfb_mode(1);
+	vita2d_set_shfb_delay(0);
+	
     	vita2d_init();
 	
 	vita2d_pgf *font = vita2d_load_default_pgf();
