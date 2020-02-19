@@ -77,6 +77,7 @@ int main() {
 		vita2d_pgf_draw_text(font, 100, 200, RGBA8(0, 255, 0, 255), 1.5f, mes1);
 
 		vita2d_end_drawing();
+	    	vita2d_wait_rendering_done();
         	vita2d_swap_buffers();
         
 	}
