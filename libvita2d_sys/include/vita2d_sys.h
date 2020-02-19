@@ -67,7 +67,6 @@ void vita2d_clear_screen();
 void vita2d_swap_buffers();
 
 SceUID vita2d_get_shfbid();
-void vita2d_set_shfb_delay(unsigned int delay);
 void vita2d_set_shfb_mode(int mode);
 
 void vita2d_clib_pass_mspace(void* space);
