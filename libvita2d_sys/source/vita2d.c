@@ -81,7 +81,6 @@ void* mspace_internal;
 /* Static variables */
 
 static SceSharedFbInfo info;
-static unsigned int sync_delay = 0;
 static int shfb_mode = 1;
 
 static int pgf_module_was_loaded = 0;
@@ -822,7 +821,6 @@ void vita2d_swap_buffers()
 		bufferIndex = 0;
 	else
 		bufferIndex = 1;
-	sceKernelDelayThread(sync_delay);
 	sceSharedFbEnd(shfb_id);
 }
 
@@ -983,11 +981,6 @@ void vita2d_set_clear_color(unsigned int color)
 unsigned int vita2d_get_clear_color()
 {
 	return clear_color_u;
-}
-
-void vita2d_set_shfb_delay(unsigned int delay)
-{
-	sync_delay = delay;
 }
 
 void vita2d_set_shfb_mode(int mode)
