@@ -38,4 +38,4 @@ vita2d_init();
 
 ## ISSUES
 
-SceShell overlay, including IME and common dialog, is not displayed properly due to sharedfb overwriting
+SceShell overlay, including IME and common dialog, is sometimes not displayed properly due to sharedfb overwriting
