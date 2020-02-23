@@ -4,6 +4,8 @@ Simple and Fast (using the GPU) 2D library for the PSVita system mode applicatio
 
 ## USAGE
 
+**Framebuffer swapping in libvita2d_sys is now performed automatically. vita2d_swap_buffers() does not exist anymore**
+
 This library is disigned to be used only with applications running in system mode. General usage is the same as standard vita2d. However, initialization proccess is different.
 
 You can control shared fb directly from your application using the following:
