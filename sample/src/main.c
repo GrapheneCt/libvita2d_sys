@@ -44,10 +44,6 @@ int main() {
 	size = 0;
 
 	vita2d_clib_pass_mspace(mspace);
-
-	vita2d_set_shfb_mode(1);
-	vita2d_set_shfb_delay(0);
-	
     	vita2d_init();
 	
 	vita2d_pgf *font = vita2d_load_default_pgf();
@@ -77,9 +73,6 @@ int main() {
 		vita2d_pgf_draw_text(font, 100, 200, RGBA8(0, 255, 0, 255), 1.5f, mes1);
 
 		vita2d_end_drawing();
-	    	vita2d_wait_rendering_done();
-        	vita2d_swap_buffers();
-        
 	}
 
 	return 0;
