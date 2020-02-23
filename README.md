@@ -6,10 +6,9 @@ Simple and Fast (using the GPU) 2D library for the PSVita system mode applicatio
 
 This library is disigned to be used only with applications running in system mode. General usage is the same as standard vita2d. However, initialization proccess is different.
 
-You can control some shared fb pramaters using the following:
+You can control shared fb directly from your application using the following:
 ```
 SceUID vita2d_get_shfbid(); //Returns shared fb id opened by application. This id can later be used to directly control shared fb from your application.
-void vita2d_set_shfb_mode(int mode); //Set shfb swapping mode. This value can be set to 1 or 2. If your application isn't displayed properly, change this value.
 ```
 
 **Textures can only be used in applications with "allow c heap" boot param != 0**
@@ -33,7 +32,3 @@ vita2d_set_shfb_mode(mode);
 
 vita2d_init();
 ```
-
-## ISSUES
-
-SceShell overlay, including IME and common dialog, is sometimes not displayed properly due to sharedfb overwriting
