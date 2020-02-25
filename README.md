@@ -30,7 +30,5 @@ mspace = sceClibMspaceCreate(clibm_base, CLIB_HEAP_SIZE);
 
 vita2d_clib_pass_mspace(mspace);
 
-vita2d_set_shfb_mode(mode);
-
 vita2d_init();
 ```
