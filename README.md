@@ -14,6 +14,7 @@ SceUID vita2d_get_shfbid(); //Returns shared fb id opened by application. This i
 ```
 
 **BMP textures can only be used in all applications**
+
 **PNG and JPEG textures can only be used in applications with "allow c heap" boot param != 0**
 
 
