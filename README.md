@@ -16,7 +16,7 @@ SceUID vita2d_get_shfbid(); //Returns shared fb id opened by application.
 **- PNG and JPEG textures can only be used in applications with "allow c heap" boot param != 0**
 
 
-**- If you want to use dynamic memory allocation in your application and "allow c heap" boot param is set to 0, sceClibMspace functions must be used**
+**- If you want to use dynamic memory allocation in your application and "allow C heap" boot param is set to 0, sceClibMspace functions must be used**
 
 ## Initialization
 
