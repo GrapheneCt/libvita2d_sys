@@ -8,7 +8,7 @@ This library is disigned to be used only with applications running in system mod
 
 You can control shared fb directly from your application using the following:
 ```
-SceUID vita2d_get_shfbid(); //Returns shared fb id opened by application. This id can later be used to directly control shared fb from your application.
+SceUID vita2d_get_shfbid(); //Returns shared fb id opened by application.
 ```
 
 **- BMP textures can only be used in all applications**
