@@ -63,8 +63,8 @@ int main() {
 
     while (1) {
 
-        vita2d_start_drawing();
-        vita2d_clear_screen();
+        	vita2d_start_drawing();
+        	vita2d_clear_screen();
 
 		if (x == 544)
 			x = 0;
