@@ -45,7 +45,7 @@ int main() {
 
 	vita2d_clib_pass_mspace(mspace);
 
-    vita2d_init();
+   	vita2d_init();
 
 	vita2d_set_vblank_wait(0);
 
