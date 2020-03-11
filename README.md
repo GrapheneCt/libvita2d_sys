@@ -11,7 +11,7 @@ You can control shared fb directly from your application using the following:
 SceUID vita2d_get_shfbid(); //Returns shared fb id opened by application.
 ```
 
-**- BMP textures can only be used in all applications**
+**- BMP textures can be used in all applications**
 
 **- PNG and JPEG textures can only be used in applications with "allow c heap" boot param != 0**
 
