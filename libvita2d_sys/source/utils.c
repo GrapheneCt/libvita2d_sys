@@ -9,7 +9,7 @@ void *gpu_alloc(SceKernelMemBlockType type, unsigned int size, unsigned int alig
 	if (type == SCE_KERNEL_MEMBLOCK_TYPE_USER_CDRAM_RW) {
 		size = ALIGN(size, 256*1024);
 	} else {
-		size = ALIGN(size, 4*1024);
+		size = ALIGN(size, 4 * 1024);
 	}
 
 	*uid = sceKernelAllocMemBlock("gpu_mem", type, size, NULL);
