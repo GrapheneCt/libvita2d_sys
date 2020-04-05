@@ -13,6 +13,7 @@ extern "C" {
 
 #define VITA2D_SYS_NORMAL_BTN_X_MARGIN 37
 #define VITA2D_SYS_NORMAL_BTN_VSIZE 80
+#define VITA2D_SYS_SUB_BTN_VSIZE 70
 #define VITA2D_SYS_HEADER_VSIZE 96
 #define VITA2D_SYS_L_CORNER_BTN_Y 454
 #define VITA2D_SYS_L_CORNER_BTN_HSIZE 90
@@ -66,6 +67,7 @@ typedef struct vita2d_pvf vita2d_pvf;
 
 typedef struct vita2d_sys_button vita2d_sys_button;
 typedef struct vita2d_sys_marker vita2d_sys_marker;
+typedef struct vita2d_sys_submenu vita2d_sys_submenu;
 
 int vita2d_init();
 int vita2d_init_advanced(unsigned int temp_pool_size);
@@ -156,6 +158,8 @@ vita2d_texture *vita2d_load_PNG_file(const char *filename);
 vita2d_texture *vita2d_load_PNG_buffer(const void *buffer);
 
 vita2d_texture *vita2d_load_JPEG_file(const char *filename);
+void vita2d_JPEG_decoder_finish(void);
+void vita2d_JPEG_decoder_initialize(void);
 vita2d_texture *vita2d_load_JPEG_buffer(const void *buffer, unsigned long buffer_size);
 
 vita2d_texture *vita2d_load_BMP_file(const char *filename);
@@ -203,9 +207,11 @@ void vita2d_pvf_embolden_rate(vita2d_pvf *font, float em);
 void vita2d_pvf_skew_rate(vita2d_pvf *font, float ax, float ay);
 void vita2d_pvf_char_size(vita2d_pvf *font, float hs, float vs);
 
-void vita2d_sys_load_tex_button_normal(void);
+void vita2d_sys_init_sysgraphics(void);
+
+void vita2d_sys_load_tex_button(void);
 void vita2d_sys_load_tex_button_l_corner(void);
-vita2d_sys_button *vita2d_sys_create_button_normal(float x, float y, const char *text, const char *icon);
+vita2d_sys_button *vita2d_sys_create_button_normal(float x, float y, const char *text, const char *subtext, const char *icon, int hasArrow);
 void vita2d_sys_draw_button(vita2d_sys_button *button);
 
 void vita2d_sys_create_marker(float x, float y, int type);
@@ -218,6 +224,7 @@ float vita2d_sys_gety_marker(void);
 void vita2d_sys_refresh_marker(void);
 void vita2d_sys_change_type_marker(int type);
 void vita2d_sys_move_marker(float delta);
+int vita2d_sys_status_marker();
 
 void vita2d_sys_coordinates_button(vita2d_sys_button *button, float x, float y);
 void vita2d_sys_highlight_button(vita2d_sys_button *button, int val);
@@ -232,6 +239,13 @@ vita2d_sys_button *vita2d_sys_create_button_l_corner(const char *icon, int color
 void vita2d_sys_create_settings_header(const char *text);
 void vita2d_sys_draw_settings_header(void);
 void vita2d_sys_change_text_header(const char *text);
+
+void vita2d_sys_create_submenu(float xDelta);
+void vita2d_sys_visibility_submenu(int val);
+void vita2d_sys_draw_submenu(void);
+int vita2d_sys_getx_submenu(void);
+vita2d_sys_button *vita2d_sys_create_button_submenu(float y, const char *text);
+void vita2d_sys_mark_button_submenu(vita2d_sys_button *button, int mark);
 
 #ifdef __cplusplus
 }
