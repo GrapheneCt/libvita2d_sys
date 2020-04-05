@@ -13,7 +13,7 @@ SceUID vita2d_get_shfbid(); //Returns shared fb id opened by application.
 
 **- BMP textures can be used in all applications**
 
-**- JPEG are decoded using hardware decoder. Make sure your application is allowed to use phycont memory**
+**- JPEG textures are decoded using hardware decoder. Make sure your application is allowed to use phycont memory**
 
 ```
 vita2d_JPEG_decoder_initialize();
