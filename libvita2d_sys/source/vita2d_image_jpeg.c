@@ -9,6 +9,7 @@
 #include <psp2/kernel/clib.h> 
 #include <psp2/io/stat.h>
 #include "utils.h"
+#include "fios2ac.h"
 
 #define GXM_TEX_MAX_SIZE 4096
 #define ROUND_UP(x, a)	((((unsigned int)x)+((a)-1u))&(~((a)-1u)))
@@ -390,7 +391,7 @@ int readFile(const char *fileName, unsigned char *pBuffer, SceSize bufSize)
 	SceUID fd;
 	int remainSize;
 
-	ret = sceIoGetstat(fileName, &stat);
+	sceIoGetstat(fileName, &stat);
 	fd = sceIoOpen(fileName, SCE_O_RDONLY, 0);
 	remainSize = (SceSize)stat.st_size;
 	while (remainSize > 0) {
@@ -398,9 +399,30 @@ int readFile(const char *fileName, unsigned char *pBuffer, SceSize bufSize)
 		pBuffer += ret;
 		remainSize -= ret;
 	}
-	ret = sceIoClose(fd);
+	sceIoClose(fd);
 
 	return (int)stat.st_size;
+}
+
+int readFileFIOS2(char *fileName, unsigned char *pBuffer, SceSize bufSize)
+{
+	int ret;
+	SceFiosStat fios_stat;
+	SceFiosFH fd;
+	int remainSize;
+
+	sceClibMemset(&fios_stat, 0, sizeof(SceFiosStat));
+	sceFiosStatSync(NULL, fileName, &fios_stat);
+	sceFiosFHOpenSync(NULL, &fd, fileName, NULL);
+	remainSize = (SceSize)fios_stat.fileSize;
+	while (remainSize > 0) {
+		ret = sceFiosFHReadSync(NULL, fd, pBuffer, remainSize);
+		pBuffer += ret;
+		remainSize -= ret;
+	}
+	sceFiosFHCloseSync(NULL, fd);
+
+	return (int)fios_stat.fileSize;
 }
 
 int jpegdecInit(SceSize streamBufSize, SceSize decodeBufSize, SceSize coefBufSize)
@@ -455,7 +477,7 @@ void vita2d_JPEG_decoder_finish(void)
 	jpegdecTerm();
 }
 
-vita2d_texture *vita2d_load_JPEG_file(const char *filename)
+vita2d_texture *vita2d_load_JPEG_file(char *filename, int io_type)
 {
 	int ret;
 	SceJpegOutputInfo outputInfo;
@@ -467,7 +489,11 @@ vita2d_texture *vita2d_load_JPEG_file(const char *filename)
 	int validWidth, validHeight;
 
 	/*E Read JPEG file to buffer. */
-	ret = readFile(filename, pJpeg, s_decCtrl.streamBufSize);
+	if (io_type == 1)
+		ret = readFileFIOS2(filename, pJpeg, s_decCtrl.streamBufSize);
+	else
+		ret = readFile(filename, pJpeg, s_decCtrl.streamBufSize);
+
 	isize = ret;
 
 	/*E Get JPEG output information. */

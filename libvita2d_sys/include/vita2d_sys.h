@@ -154,15 +154,15 @@ void vita2d_draw_texture_tint_scale_rotate(const vita2d_texture *texture, float 
 void vita2d_draw_texture_part_tint_scale_rotate(const vita2d_texture *texture, float x, float y, float tex_x, float tex_y, float tex_w, float tex_h, float x_scale, float y_scale, float rad, unsigned int color);
 void vita2d_draw_array_textured(const vita2d_texture *texture, SceGxmPrimitiveType mode, const vita2d_texture_vertex *vertices, size_t count, unsigned int color);
 
-vita2d_texture *vita2d_load_PNG_file(const char *filename);
+vita2d_texture *vita2d_load_PNG_file(char *filename, int io_type);
 vita2d_texture *vita2d_load_PNG_buffer(const void *buffer);
 
-vita2d_texture *vita2d_load_JPEG_file(const char *filename);
+vita2d_texture *vita2d_load_JPEG_file(char *filename, int io_type);
 void vita2d_JPEG_decoder_finish(void);
 void vita2d_JPEG_decoder_initialize(void);
 vita2d_texture *vita2d_load_JPEG_buffer(const void *buffer, unsigned long buffer_size);
 
-vita2d_texture *vita2d_load_BMP_file(const char *filename);
+vita2d_texture *vita2d_load_BMP_file(char *filename, int io_type);
 vita2d_texture *vita2d_load_BMP_buffer(const void *buffer);
 
 vita2d_font *vita2d_load_font_file(const char *filename);

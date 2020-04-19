@@ -4,6 +4,7 @@
 #include <psp2/gxm.h>
 #include <png.h>
 #include "vita2d_sys.h"
+#include "fios2ac.h"
 
 #define PNG_SIGSIZE (8)
 
@@ -17,6 +18,12 @@ static void _vita2d_read_png_file_fn(png_structp png_ptr, png_bytep data, png_si
 {
 	SceUID fd = *(SceUID*) png_get_io_ptr(png_ptr);
 	sceIoRead(fd, data, length);
+}
+
+static void _vita2d_read_png_file_fn_FIOS2(png_structp png_ptr, png_bytep data, png_size_t length)
+{
+	SceFiosFH fd = *(SceFiosFH*)png_get_io_ptr(png_ptr);
+	sceFiosFHReadSync(NULL, fd, data, length);
 }
 
 static void _vita2d_read_png_buffer_fn(png_structp png_ptr, png_bytep data, png_size_t length)
@@ -123,9 +130,38 @@ error_create_read:
 	return NULL;
 }
 
-
-vita2d_texture *vita2d_load_PNG_file(const char *filename)
+vita2d_texture *vita2d_load_PNG_file_FIOS2(char *mountedFilePath)
 {
+	png_byte pngsig[PNG_SIGSIZE];
+	SceFiosFH fd;
+
+	if (sceFiosFHOpenSync(NULL, &fd, mountedFilePath, NULL) < 0) {
+		goto exit_error;
+	}
+
+	if (sceFiosFHReadSync(NULL, fd, pngsig, PNG_SIGSIZE) != PNG_SIGSIZE) {
+		goto exit_close;
+	}
+
+	if (png_sig_cmp(pngsig, 0, PNG_SIGSIZE) != 0) {
+		goto exit_close;
+	}
+
+	vita2d_texture *texture = _vita2d_load_PNG_generic((void *)&fd, _vita2d_read_png_file_fn_FIOS2);
+	sceFiosFHCloseSync(NULL, fd);
+	return texture;
+
+exit_close:
+	sceFiosFHCloseSync(NULL, fd);
+exit_error:
+	return NULL;
+}
+
+vita2d_texture *vita2d_load_PNG_file(char *filename, int io_type)
+{
+	if (io_type == 1)
+		return vita2d_load_PNG_file_FIOS2(filename);
+
 	png_byte pngsig[PNG_SIGSIZE];
 	SceUID fd;
 

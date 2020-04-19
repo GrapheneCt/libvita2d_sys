@@ -2,8 +2,11 @@
 #include <string.h>
 #include <stdlib.h>
 #include <psp2/io/fcntl.h>
+#include <psp2/kernel/clib.h>
 #include <psp2/gxm.h>
 #include "vita2d_sys.h"
+
+#include "fios2ac.h"
 
 #define BMP_SIGNATURE (0x4D42)
 
@@ -114,6 +117,16 @@ static void _vita2d_read_bmp_file_read_fn(void *user_data, void *buffer, unsigne
 	sceIoRead(*(SceUID*)user_data, buffer, length);
 }
 
+static void _vita2d_read_bmp_file_seek_fn_FIOS2(void *user_data, unsigned int offset)
+{
+	sceFiosFHSeek(*(SceFiosFH*)user_data, offset, SCE_FIOS_SEEK_SET);
+}
+
+static void _vita2d_read_bmp_file_read_fn_FIOS2(void *user_data, void *buffer, unsigned int length)
+{
+	sceFiosFHReadSync(NULL, *(SceFiosFH*)user_data, buffer, length);
+}
+
 static void _vita2d_read_bmp_buffer_seek_fn(void *user_data, unsigned int offset)
 {
 	*(unsigned int *)user_data += offset;
@@ -125,8 +138,43 @@ static void _vita2d_read_bmp_buffer_read_fn(void *user_data, void *buffer, unsig
 	*(unsigned int *)user_data += length;
 }
 
-vita2d_texture *vita2d_load_BMP_file(const char *filename)
+vita2d_texture *vita2d_load_BMP_file_FIOS2(char* mountedFilePath)
 {
+	SceFiosFH fd;
+	if (sceFiosFHOpenSync(NULL, &fd, mountedFilePath, NULL) < 0) {
+		goto exit_error;
+	}
+
+	BITMAPFILEHEADER bmp_fh;
+	sceFiosFHReadSync(NULL, fd, (void *)&bmp_fh, sizeof(BITMAPFILEHEADER));
+	if (bmp_fh.bfType != BMP_SIGNATURE) {
+		goto exit_close;
+	}
+
+	BITMAPINFOHEADER bmp_ih;
+	sceFiosFHReadSync(NULL, fd, (void *)&bmp_ih, sizeof(BITMAPINFOHEADER));
+
+	vita2d_texture *texture = _vita2d_load_BMP_generic(&bmp_fh,
+		&bmp_ih,
+		(void *)&fd,
+		_vita2d_read_bmp_file_seek_fn_FIOS2,
+		_vita2d_read_bmp_file_read_fn_FIOS2);
+
+	sceFiosFHCloseSync(NULL, fd);
+	return texture;
+
+exit_close:
+	sceFiosFHCloseSync(NULL, fd);
+exit_error:
+	return NULL;
+}
+
+
+vita2d_texture *vita2d_load_BMP_file(char *filename, int io_type)
+{
+	if (io_type == 1)
+		return vita2d_load_BMP_file_FIOS2(filename);
+
 	SceUID fd;
 	if ((fd = sceIoOpen(filename, SCE_O_RDONLY, 0777)) < 0) {
 		goto exit_error;
