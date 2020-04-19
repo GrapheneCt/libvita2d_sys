@@ -6,9 +6,7 @@ libvita2d_sys can be used in both "system mode" and "game mode" applications.  A
 
 ## Usage
 
-This library is disigned to be used only with applications running in system mode. General usage is the same as standard vita2d. However, initialization proccess is different.
-
-You can control shared fb directly from your application using the following:
+If your application is running in "game mode", you can control shared fb directly from your application using the following:
 ```
 SceUID vita2d_get_shfbid(); //Returns shared fb id opened by application.
 ```
