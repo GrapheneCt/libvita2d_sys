@@ -12,7 +12,7 @@ SceUID vita2d_get_shfbid(); //Returns shared fb id opened by application.
 ```
 ## Textures
 
-Loading directly from FIOS2 overlay (for example, loading directly from PSARC archive) is supported. When calling vita2d_load_XXX_file() specify 1 for io_type to use FIOS2 or 0 to use SceIo. 
+Loading directly from FIOS2 overlay (for example, loading directly from PSARC archive) is supported. When calling vita2d_load_XXX_file() specify 1 for io_type to use FIOS2 or 0 to use SceIo. When using FIOS2, remember to specify your mounted path to the file instead of the actual file path. 
 
 **- BMP textures can be used in all applications**
 
