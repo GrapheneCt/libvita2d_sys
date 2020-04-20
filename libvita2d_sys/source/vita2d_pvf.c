@@ -313,7 +313,7 @@ int generic_pvf_draw_text(vita2d_pvf *font, int draw, int *height,
 			if (pen_x > max_x)
 				max_x = pen_x;
 			pen_x = start_x;
-			pen_y += font->vsize * scale;
+			pen_y += font->vsize * scale + (font->vsize / 2);
 			continue;
 		}
 
