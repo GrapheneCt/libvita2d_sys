@@ -1,5 +1,6 @@
 #include <psp2/pgf.h>
 #include <psp2/kernel/sysmem.h>
+#include <psp2/kernel/clib.h>
 #include <psp2/kernel/threadmgr.h>
 #include <string.h>
 #include <stdlib.h>
@@ -65,7 +66,7 @@ static vita2d_pgf *vita2d_load_pgf_pre(int numFonts)
 	vita2d_pgf *font = sceClibMspaceMalloc(mspace_internal, sizeof(*font));
 	if (!font)
 		return NULL;
-	memset(font, 0, sizeof(vita2d_pgf));
+	sceClibMemset(font, 0, sizeof(vita2d_pgf));
 
 	SceFontNewLibParams params = {
 		font,
@@ -129,7 +130,7 @@ vita2d_pgf *vita2d_load_system_pgf(int numFonts, const vita2d_system_pgf_config 
 			goto cleanup;
 		}
 
-		memset(tmp, 0, sizeof(vita2d_pgf_font_handle));
+		sceClibMemset(tmp, 0, sizeof(vita2d_pgf_font_handle));
 		tmp->font_handle = handle;
 		tmp->in_font_group = configs[i].in_font_group;
 	}
@@ -181,7 +182,7 @@ vita2d_pgf *vita2d_load_custom_pgf(const char *path)
 		sceClibMspaceFree(mspace_internal, font);
 		return NULL;
 	}
-	memset(handle, 0, sizeof(vita2d_pgf_font_handle));
+	sceClibMemset(handle, 0, sizeof(vita2d_pgf_font_handle));
 	handle->font_handle = font_handle;
 	font->font_handle_list = handle;
 

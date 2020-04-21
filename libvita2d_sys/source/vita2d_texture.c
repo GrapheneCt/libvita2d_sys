@@ -1,4 +1,5 @@
 #include <psp2/kernel/sysmem.h>
+#include <psp2/kernel/clib.h>
 #include <string.h>
 #include <stdlib.h>
 #include <math.h>
@@ -13,7 +14,6 @@ extern void* mspace_internal;
 
 extern void* sceClibMspaceMalloc(void* space, unsigned int size);
 extern void sceClibMspaceFree(void* space, void* adress);
-extern void* sceClibMemset(void* s, int c, SceSize n);
 
 static int tex_format_to_bytespp(SceGxmTextureFormat format)
 {
@@ -169,7 +169,7 @@ static vita2d_texture *_vita2d_create_empty_texture_format_advanced(unsigned int
 
 		// set up parameters
 		SceGxmRenderTargetParams renderTargetParams;
-		memset(&renderTargetParams, 0, sizeof(SceGxmRenderTargetParams));
+		sceClibMemset(&renderTargetParams, 0, sizeof(SceGxmRenderTargetParams));
 		renderTargetParams.flags = 0;
 		renderTargetParams.width = w;
 		renderTargetParams.height = h;

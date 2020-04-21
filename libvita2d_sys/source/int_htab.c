@@ -1,5 +1,6 @@
 #include <stdlib.h>
 #include <string.h>
+#include <psp2/kernel/clib.h>
 #include "int_htab.h"
 
 extern void* mspace_internal;
@@ -28,7 +29,7 @@ int_htab *int_htab_create(size_t size)
 	htab->used = 0;
 
 	htab->entries = sceClibMspaceMalloc(mspace_internal, htab->size * sizeof(*htab->entries));
-	memset(htab->entries, 0, htab->size * sizeof(*htab->entries));
+	sceClibMemset(htab->entries, 0, htab->size * sizeof(*htab->entries));
 
 	return htab;
 }
@@ -55,7 +56,7 @@ void int_htab_resize(int_htab *htab, unsigned int new_size)
 	htab->size = new_size;
 	htab->used = 0;
 	htab->entries = sceClibMspaceMalloc(mspace_internal, new_size * sizeof(*htab->entries));
-	memset(htab->entries, 0, new_size * sizeof(*htab->entries));
+	sceClibMemset(htab->entries, 0, new_size * sizeof(*htab->entries));
 
 	for (i = 0; i < old_size; i++) {
 		if (old_entries[i].value != NULL) {

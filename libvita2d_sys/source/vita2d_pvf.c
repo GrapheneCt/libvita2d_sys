@@ -1,6 +1,7 @@
 #include <psp2/pvf.h>
 #include <psp2/kernel/sysmem.h>
 #include <psp2/kernel/threadmgr.h>
+#include <psp2/kernel/clib.h>
 #include <string.h>
 #include <stdlib.h>
 #include <stdio.h>
@@ -75,7 +76,7 @@ static vita2d_pvf *vita2d_load_pvf_pre(int numFonts)
 	if (!font)
 		return NULL;
 
-	memset(font, 0, sizeof(vita2d_pvf));
+	sceClibMemset(font, 0, sizeof(vita2d_pvf));
 
 	ScePvfInitRec params = {
 		font,
@@ -118,7 +119,7 @@ vita2d_pvf *vita2d_load_system_pvf(int numFonts, const vita2d_system_pvf_config 
 	for (i = 0; i < numFonts; i++) {
 		ScePvfFontStyleInfo style;
 
-		memset(&style, 0, sizeof(style));
+		sceClibMemset(&style, 0, sizeof(style));
 		style.languageCode = configs[i].language;
 		style.familyCode = configs[i].family;
 		style.style = configs[i].style;
@@ -143,7 +144,7 @@ vita2d_pvf *vita2d_load_system_pvf(int numFonts, const vita2d_system_pvf_config 
 			goto cleanup;
 		}
 
-		memset(tmp, 0, sizeof(vita2d_pvf_font_handle));
+		sceClibMemset(tmp, 0, sizeof(vita2d_pvf_font_handle));
 		tmp->font_handle = handle;
 		tmp->in_font_group = configs[i].in_font_group;
 	}
@@ -198,7 +199,7 @@ vita2d_pvf *vita2d_load_custom_pvf(const char *path, float hSize, float vSize)
 
 	scePvfSetCharSize(font_handle, hSize, vSize);
 
-	memset(handle, 0, sizeof(vita2d_pvf_font_handle));
+	sceClibMemset(handle, 0, sizeof(vita2d_pvf_font_handle));
 	handle->font_handle = font_handle;
 	font->font_handle_list = handle;
 

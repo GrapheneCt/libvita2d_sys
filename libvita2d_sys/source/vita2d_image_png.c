@@ -1,6 +1,7 @@
 #include <string.h>
 #include <stdlib.h>
 #include <psp2/io/fcntl.h>
+#include <psp2/kernel/clib.h>
 #include <psp2/gxm.h>
 #include <png.h>
 #include "vita2d_sys.h"
@@ -12,7 +13,6 @@ extern void* mspace_internal;
 
 extern void* sceClibMspaceMalloc(void* space, unsigned int size);
 extern void sceClibMspaceFree(void* space, void* adress);
-extern void* sceClibMemcpy(void* destination, const void *source, SceSize num);
 
 static void _vita2d_read_png_file_fn(png_structp png_ptr, png_bytep data, png_size_t length)
 {

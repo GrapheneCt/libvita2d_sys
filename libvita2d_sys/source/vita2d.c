@@ -1188,7 +1188,7 @@ static int vita2d_init_internal(unsigned int temp_pool_size, SceGxmMultisampleMo
 	if (err < 0)
 		system_mode_flag = 0;
 	sceClibMspaceFree(mspace_internal, dummy_struct);
-	DEBUG("system_mode_flag: %d\n", system_mode_flag);
+	sceClibPrintf("system_mode_flag: %d\n", system_mode_flag);
 
 	if (system_mode_flag)
 		return vita2d_init_internal_for_system(temp_pool_size, msaa);
