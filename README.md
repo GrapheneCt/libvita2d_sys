@@ -6,7 +6,7 @@ libvita2d_sys can be used in both "system mode" and "game mode" applications.  A
 
 ## Usage
 
-If your application is running in "game mode", you can control shared fb directly from your application using the following:
+If your application is running in "system mode", you can control shared fb directly from your application using the following:
 ```
 SceUID vita2d_get_shfbid(); //Returns shared fb id opened by application.
 ```
@@ -24,7 +24,7 @@ vita2d_JPEG_decoder_initialize();
 vita2d_JPEG_decoder_finish();
 ```
 
-**- PNG textures can only be used in applications with "allow C heap" boot param != 0 or in "game mode" applications**
+**- PNG textures can only be used in applications with newlib heap available**
 
 **- If you want to use dynamic memory allocation in your application and "allow C heap" boot param is set to 0, sceClibMspace functions must be used**
 
