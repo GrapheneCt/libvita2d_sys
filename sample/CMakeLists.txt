@@ -10,7 +10,6 @@ endif()
 
 project(libvita2d_sys_sample)
 
-add_subdirectory(gxminternalforvsh)
 add_subdirectory(libkernel)
 
 include("${DOLCESDK}/share/dolce.cmake" REQUIRED)
@@ -31,7 +30,6 @@ add_executable(${PROJECT_NAME}
 target_link_libraries(${PROJECT_NAME}
 	vita2d_sys
 	SceGxm_stub
-	SceGxm_stub_weak
 	SceLibKernel_stub_weak
 	SceAppMgr_stub 
 	ScePgf_stub 
