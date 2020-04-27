@@ -31,9 +31,6 @@
 
 extern void* mspace_internal;
 
-extern void* sceClibMspaceMalloc(void* space, unsigned int size);
-extern void sceClibMspaceFree(void* space, void* adress);
-
 typedef struct {
 	SceUID		bufferMemBlock;
 	void	   *pBuffer;

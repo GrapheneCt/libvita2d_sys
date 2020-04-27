@@ -12,9 +12,6 @@ static SceKernelMemBlockType MemBlockType = SCE_KERNEL_MEMBLOCK_TYPE_USER_RW_UNC
 
 extern void* mspace_internal;
 
-extern void* sceClibMspaceMalloc(void* space, unsigned int size);
-extern void sceClibMspaceFree(void* space, void* adress);
-
 static int tex_format_to_bytespp(SceGxmTextureFormat format)
 {
 	switch (format & 0x9f000000U) {

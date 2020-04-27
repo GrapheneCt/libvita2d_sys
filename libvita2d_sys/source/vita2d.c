@@ -21,8 +21,8 @@
 
 /* Defines */
 
-#define DISPLAY_WIDTH			960
-#define DISPLAY_HEIGHT			544
+#define DISPLAY_WIDTH				960
+#define DISPLAY_HEIGHT				544
 #define DISPLAY_STRIDE_IN_PIXELS	960
 #define DISPLAY_COLOR_FORMAT		SCE_GXM_COLOR_FORMAT_A8B8G8R8
 #define DISPLAY_PIXEL_FORMAT		SCE_DISPLAY_PIXELFORMAT_A8B8G8R8
@@ -76,10 +76,6 @@ extern const SceGxmProgram color_f_gxp_start;
 extern const SceGxmProgram texture_v_gxp_start;
 extern const SceGxmProgram texture_f_gxp_start;
 extern const SceGxmProgram texture_tint_f_gxp_start;
-extern int SceGxmInternalForVsh_A04F5FAC(const SceGxmInitializeParams *);
-
-extern void* sceClibMspaceMalloc(void* space, unsigned int size);
-extern void sceClibMspaceFree(void* space, void* adress);
 
 int sceAppMgrGetBudgetInfo(void*);
 
@@ -275,8 +271,8 @@ static int vita2d_init_internal_for_system(unsigned int temp_pool_size, SceGxmMu
 	gxm_init_params_internal.displayQueueMaxPendingCount = DISPLAY_MAX_PENDING_SWAPS;
 	gxm_init_params_internal.parameterBufferSize = 0x200000;
 
-	err = SceGxmInternalForVsh_A04F5FAC(&gxm_init_params_internal);
-	DEBUG("SceGxmInternalForVsh_A04F5FAC(): 0x%08X\n", err);
+	err = sceGxmVshInitialize(&gxm_init_params_internal);
+	DEBUG("sceGxmVshInitialize(): 0x%08X\n", err);
 
 	SceSharedFbInfo info_init;
 

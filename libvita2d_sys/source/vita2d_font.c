@@ -1,4 +1,5 @@
 #include <psp2/kernel/sysmem.h>
+#include <psp2/kernel/clib.h>
 #include <string.h>
 #include <stdlib.h>
 #include <math.h>
@@ -15,9 +16,6 @@
 #define ATLAS_DEFAULT_H 512
 
 extern void* mspace_internal;
-
-extern void* sceClibMspaceMalloc(void* space, unsigned int size);
-extern void sceClibMspaceFree(void* space, void* adress);
 
 typedef enum {
 	VITA2D_LOAD_FONT_FROM_FILE,
@@ -329,7 +327,7 @@ int vita2d_font_draw_textf(vita2d_font *font, int x, int y, unsigned int color,
 	va_list argptr;
 
 	va_start(argptr, text);
-	vsnprintf(buf, sizeof(buf), text, argptr);
+	sceClibVsnprintf(buf, sizeof(buf), text, argptr);
 	va_end(argptr);
 
 	return vita2d_font_draw_text(font, x, y, color, size, buf);
@@ -348,7 +346,7 @@ int vita2d_font_draw_textf_ls(vita2d_font *font, int x, int y, float linespace, 
 	va_list argptr;
 
 	va_start(argptr, text);
-	vsnprintf(buf, sizeof(buf), text, argptr);
+	sceClibVsnprintf(buf, sizeof(buf), text, argptr);
 	va_end(argptr);
 
 	return vita2d_font_draw_text_ls(font, x, y, linespace, color, size, buf);

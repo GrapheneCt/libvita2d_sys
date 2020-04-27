@@ -1,10 +1,8 @@
 #include <stdlib.h>
 #include "bin_packing_2d.h"
+#include <psp2/kernel/clib.h>
 
 extern void* mspace_internal;
-
-extern void* sceClibMspaceMalloc(void* space, unsigned int size);
-extern void sceClibMspaceFree(void* space, void* adress);
 
 bp2d_node *bp2d_create(const bp2d_rectangle *rect)
 {

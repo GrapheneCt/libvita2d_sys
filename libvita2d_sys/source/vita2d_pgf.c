@@ -19,8 +19,6 @@
 
 extern void* mspace_internal;
 
-extern void* sceClibMspaceMalloc(void* space, unsigned int size);
-extern void sceClibMspaceFree(void* space, void* adress);
 extern void* sceClibMspaceMemalign(void* space, unsigned int alignment, unsigned int size);
 
 typedef struct vita2d_pgf_font_handle {
@@ -336,7 +334,7 @@ int vita2d_pgf_draw_textf(vita2d_pgf *font, int x, int y,
 	char buf[1024];
 	va_list argptr;
 	va_start(argptr, text);
-	vsnprintf(buf, sizeof(buf), text, argptr);
+	sceClibVsnprintf(buf, sizeof(buf), text, argptr);
 	va_end(argptr);
 	return vita2d_pgf_draw_text(font, x, y, color, scale, buf);
 }
@@ -355,7 +353,7 @@ int vita2d_pgf_draw_textf_ls(vita2d_pgf *font, int x, int y, float linespace,
 	char buf[1024];
 	va_list argptr;
 	va_start(argptr, text);
-	vsnprintf(buf, sizeof(buf), text, argptr);
+	sceClibVsnprintf(buf, sizeof(buf), text, argptr);
 	va_end(argptr);
 	return vita2d_pgf_draw_text_ls(font, x, y, linespace, color, scale, buf);
 }

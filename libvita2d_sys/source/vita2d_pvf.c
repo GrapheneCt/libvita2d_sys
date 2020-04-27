@@ -21,8 +21,6 @@
 
 extern void* mspace_internal;
 
-extern void* sceClibMspaceMalloc(void* space, unsigned int size);
-extern void sceClibMspaceFree(void* space, void* adress);
 extern void* sceClibMspaceMemalign(void* space, unsigned int alignment, unsigned int size);
 extern void* sceClibMspaceRealloc(void* space, void* adress, unsigned int size);
 
@@ -79,7 +77,7 @@ static vita2d_pvf *vita2d_load_pvf_pre(int numFonts)
 	sceClibMemset(font, 0, sizeof(vita2d_pvf));
 
 	ScePvfInitRec params = {
-		font,
+		NULL,
 		numFonts,
 		NULL,
 		NULL,
@@ -376,7 +374,7 @@ int vita2d_pvf_draw_textf(vita2d_pvf *font, int x, int y,
 	char buf[1024];
 	va_list argptr;
 	va_start(argptr, text);
-	vsnprintf(buf, sizeof(buf), text, argptr);
+	sceClibVsnprintf(buf, sizeof(buf), text, argptr);
 	va_end(argptr);
 	return vita2d_pvf_draw_text(font, x, y, color, scale, buf);
 }
@@ -395,7 +393,7 @@ int vita2d_pvf_draw_textf_ls(vita2d_pvf *font, int x, int y, float linespace,
 	char buf[1024];
 	va_list argptr;
 	va_start(argptr, text);
-	vsnprintf(buf, sizeof(buf), text, argptr);
+	sceClibVsnprintf(buf, sizeof(buf), text, argptr);
 	va_end(argptr);
 	return vita2d_pvf_draw_text_ls(font, x, y, linespace, color, scale, buf);
 }

@@ -11,9 +11,6 @@
 
 extern void* mspace_internal;
 
-extern void* sceClibMspaceMalloc(void* space, unsigned int size);
-extern void sceClibMspaceFree(void* space, void* adress);
-
 static void _vita2d_read_png_file_fn(png_structp png_ptr, png_bytep data, png_size_t length)
 {
 	SceUID fd = *(SceUID*) png_get_io_ptr(png_ptr);

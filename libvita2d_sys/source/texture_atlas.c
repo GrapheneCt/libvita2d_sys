@@ -1,11 +1,9 @@
 #include <stdlib.h>
 #include <string.h>
 #include "texture_atlas.h"
+#include <psp2/kernel/clib.h>
 
 extern void* mspace_internal;
-
-extern void* sceClibMspaceMalloc(void* space, unsigned int size);
-extern void sceClibMspaceFree(void* space, void* adress);
 
 texture_atlas *texture_atlas_create(int width, int height, SceGxmTextureFormat format)
 {

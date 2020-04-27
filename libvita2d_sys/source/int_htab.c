@@ -5,9 +5,6 @@
 
 extern void* mspace_internal;
 
-extern void* sceClibMspaceMalloc(void* space, unsigned int size);
-extern void sceClibMspaceFree(void* space, void* adress);
-
 static inline unsigned int FNV_1a(unsigned int key)
 {
 	unsigned char *bytes = (unsigned char *)&key;

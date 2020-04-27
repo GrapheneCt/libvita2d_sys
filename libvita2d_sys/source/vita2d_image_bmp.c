@@ -12,10 +12,6 @@
 
 extern void* mspace_internal;
 
-extern void* sceClibMspaceMalloc(void* space, unsigned int size);
-extern void sceClibMspaceFree(void* space, void* adress);
-extern void* sceClibMemcpy(void* destination, const void* source, SceSize num);
-
 typedef struct {
 	unsigned short	bfType;
 	unsigned int	bfSize;
