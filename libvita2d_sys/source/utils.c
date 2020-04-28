@@ -1,6 +1,6 @@
-#include "utils.h"
 #include <math.h>
-#include <string.h>
+#include <psp2/kernel/clib.h>
+#include "utils.h"
 
 void *gpu_alloc(SceKernelMemBlockType type, unsigned int size, unsigned int alignment, unsigned int attribs, SceUID *uid)
 {
@@ -86,7 +86,7 @@ void fragment_usse_free(SceUID uid)
 
 void matrix_copy(float *dst, const float *src)
 {
-	memcpy(dst, src, sizeof(float)*4*4);
+	sceClibMemcpy(dst, src, sizeof(float)*4*4);
 }
 
 void matrix_identity4x4(float *m)

@@ -1,7 +1,5 @@
 #include <psp2/kernel/sysmem.h>
 #include <psp2/kernel/clib.h>
-#include <string.h>
-#include <stdlib.h>
 #include <math.h>
 #include "vita2d_sys.h"
 #include "utils.h"

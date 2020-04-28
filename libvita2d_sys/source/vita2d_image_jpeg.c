@@ -1,6 +1,3 @@
-#include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
 #include <arm_neon.h>
 #include <psp2/io/fcntl.h>
 #include <psp2/gxm.h>

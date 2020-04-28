@@ -1,5 +1,3 @@
-#include <stdlib.h>
-#include <string.h>
 #include <psp2/kernel/clib.h>
 #include "int_htab.h"
 

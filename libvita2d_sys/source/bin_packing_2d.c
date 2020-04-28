@@ -1,4 +1,3 @@
-#include <stdlib.h>
 #include "bin_packing_2d.h"
 #include <psp2/kernel/clib.h>
 

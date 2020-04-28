@@ -1,5 +1,3 @@
-#include <stdlib.h>
-#include <string.h>
 #include "texture_atlas.h"
 #include <psp2/kernel/clib.h>
 

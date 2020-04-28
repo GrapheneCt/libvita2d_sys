@@ -7,8 +7,6 @@
 #include <psp2/message_dialog.h>
 #include <psp2/sysmodule.h>
 #include <psp2/appmgr.h>
-#include <string.h>
-#include <stdlib.h>
 #include "vita2d_sys.h"
 #include "utils.h"
 
@@ -1287,7 +1285,7 @@ int vita2d_fini()
 	gpu_free(fragmentRingBufferUid);
 	gpu_free(vertexRingBufferUid);
 	gpu_free(vdmRingBufferUid);
-	free(contextParams.hostMem);
+	sceClibMspaceFree(mspace_internal, contextParams.hostMem);
 
 	gpu_free(poolUid);
 

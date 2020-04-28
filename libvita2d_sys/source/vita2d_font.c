@@ -1,7 +1,5 @@
 #include <psp2/kernel/sysmem.h>
 #include <psp2/kernel/clib.h>
-#include <string.h>
-#include <stdlib.h>
 #include <math.h>
 #include <freetype2/ft2build.h>
 #include FT_CACHE_H

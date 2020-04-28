@@ -1,6 +1,3 @@
-#include <stdio.h>
-#include <string.h>
-#include <stdlib.h>
 #include <psp2/io/fcntl.h>
 #include <psp2/kernel/clib.h>
 #include <psp2/gxm.h>
@@ -105,7 +102,7 @@ static vita2d_texture *_vita2d_load_BMP_generic(
 
 static void _vita2d_read_bmp_file_seek_fn(void *user_data, unsigned int offset)
 {
-	sceIoLseek(*(SceUID*)user_data, offset, SEEK_SET);
+	sceIoLseek(*(SceUID*)user_data, offset, SCE_SEEK_SET);
 }
 
 static void _vita2d_read_bmp_file_read_fn(void *user_data, void *buffer, unsigned int length)
