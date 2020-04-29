@@ -1285,7 +1285,7 @@ int vita2d_fini()
 	gpu_free(fragmentRingBufferUid);
 	gpu_free(vertexRingBufferUid);
 	gpu_free(vdmRingBufferUid);
-	free(contextParams.hostMem);
+	sceClibMspaceFree(mspace_internal, contextParams.hostMem);
 
 	gpu_free(poolUid);
 
