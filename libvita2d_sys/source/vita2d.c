@@ -7,6 +7,8 @@
 #include <psp2/message_dialog.h>
 #include <psp2/sysmodule.h>
 #include <psp2/appmgr.h>
+#include <string.h>
+#include <stdlib.h>
 #include "vita2d_sys.h"
 #include "utils.h"
 
@@ -1182,7 +1184,7 @@ static int vita2d_init_internal(unsigned int temp_pool_size, SceGxmMultisampleMo
 	if (err < 0)
 		system_mode_flag = 0;
 	sceClibMspaceFree(mspace_internal, dummy_struct);
-	sceClibPrintf("system_mode_flag: %d\n", system_mode_flag);
+	DEBUG("system_mode_flag: %d\n", system_mode_flag);
 
 	if (system_mode_flag)
 		return vita2d_init_internal_for_system(temp_pool_size, msaa);
@@ -1212,8 +1214,8 @@ void vita2d_wait_rendering_done()
 
 int vita2d_fini()
 {
-
-	sceSharedFbBegin(shfb_id, &info);
+	if (system_mode_flag)
+		sceSharedFbBegin(shfb_id, &info);
 
 	unsigned int i;
 
@@ -1285,19 +1287,21 @@ int vita2d_fini()
 	gpu_free(fragmentRingBufferUid);
 	gpu_free(vertexRingBufferUid);
 	gpu_free(vdmRingBufferUid);
-	sceClibMspaceFree(mspace_internal, contextParams.hostMem);
+	free(contextParams.hostMem);
 
 	gpu_free(poolUid);
 
 	// terminate libgxm
 	sceGxmTerminate();
 
-	/* if (pgf_module_was_loaded != SCE_SYSMODULE_LOADED)
-		sceSysmoduleUnloadModule(SCE_SYSMODULE_PGF); */
+	if (pgf_module_was_loaded == SCE_SYSMODULE_LOADED)
+		sceSysmoduleUnloadModule(SCE_SYSMODULE_PGF);
 
-	sceGxmUnmapMemory(info.base1);
-	sceSharedFbEnd(shfb_id);
-	sceSharedFbClose(shfb_id);
+	if (system_mode_flag) {
+		sceGxmUnmapMemory(info.base1);
+		sceSharedFbEnd(shfb_id);
+		sceSharedFbClose(shfb_id);
+	}
 
 	vita2d_initialized = 0;
 
