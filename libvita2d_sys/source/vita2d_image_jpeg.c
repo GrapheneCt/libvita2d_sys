@@ -465,6 +465,11 @@ void vita2d_JPEG_decoder_initialize(void)
 	jpegdecInit(MAX_JPEG_BUF_SIZE, MAX_IMAGE_BUF_SIZE, MAX_COEF_BUF_SIZE);
 }
 
+void vita2d_JPEG_decoder_initialize_with_params(SceSize streamBufSize, SceSize decodeBufSize, SceSize coefBufSize)
+{
+	jpegdecInit(streamBufSize, decodeBufSize, coefBufSize);
+}
+
 void vita2d_JPEG_decoder_finish(void)
 {
 	jpegdecTerm();
@@ -556,8 +561,6 @@ vita2d_texture *vita2d_load_JPEG_file(char *filename, int io_type)
 
 	if (pFrameInfo.pitchWidth > GXM_TEX_MAX_SIZE || pFrameInfo.pitchHeight > GXM_TEX_MAX_SIZE)
 		return NULL;
-
-	//return NULL;
 
 	unsigned int size = ROUND_UP(4 * 1024 * pFrameInfo.pitchHeight, 1024 * 1024);
 
