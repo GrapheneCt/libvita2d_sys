@@ -47,6 +47,7 @@ typedef struct vita2d_texture {
 	SceGxmColorSurface gxm_sfc;
 	SceGxmDepthStencilSurface gxm_sfd;
 	SceUID depth_UID;
+	void *gxt_data;
 } vita2d_texture;
 
 typedef struct vita2d_system_pgf_config {
@@ -160,10 +161,14 @@ vita2d_texture *vita2d_load_PNG_buffer(const void *buffer);
 vita2d_texture *vita2d_load_JPEG_file(char *filename, int io_type);
 void vita2d_JPEG_decoder_finish(void);
 void vita2d_JPEG_decoder_initialize(void);
+void vita2d_JPEG_decoder_initialize_with_params(SceSize streamBufSize, SceSize decodeBufSize, SceSize coefBufSize);
 vita2d_texture *vita2d_load_JPEG_buffer(const void *buffer, unsigned long buffer_size);
 
 vita2d_texture *vita2d_load_BMP_file(char *filename, int io_type);
 vita2d_texture *vita2d_load_BMP_buffer(const void *buffer);
+
+vita2d_texture *vita2d_load_GXT_file(char *filename, int texture_index, int io_type);
+vita2d_texture *vita2d_load_additional_GXT(vita2d_texture *initial_tex, int texture_index);
 
 vita2d_font *vita2d_load_font_file(const char *filename);
 vita2d_font *vita2d_load_font_mem(const void *buffer, unsigned int size);
