@@ -275,7 +275,7 @@ static int vita2d_init_internal_for_system(unsigned int temp_pool_size, SceGxmMu
 	SceSharedFbInfo info_init;
 
 	while (1) {
-		shfb_id = _sceSharedFbOpen(1, 0x01660000);
+		shfb_id = _sceSharedFbOpen(1, 0x03570011);
 		sceClibMemset(&info_init, 0, sizeof(info_init));
 		sceSharedFbGetInfo(shfb_id, &info_init);
 		if (info_init.curbuf == 1)
