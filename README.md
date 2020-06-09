@@ -26,8 +26,6 @@ vita2d_JPEG_decoder_finish();
 
 **- PNG textures can only be used in applications with newlib heap available**
 
-**- If you want to use dynamic memory allocation in your application and "allow C heap" boot param is set to 0, sceClibMspace functions must be used**
-
 ## Initialization
 
 To initialize vita2d_sys in your application following must be done. Minimum value for CLIB_HEAP_SIZE is 1MiB.
