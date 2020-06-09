@@ -35,7 +35,7 @@ void gpu_free(SceUID uid)
 	sceKernelFreeMemBlock(uid);
 }
 
-void *vertex_usse_alloc(unsigned int size, SceUID *uid, unsigned int *usse_offset)
+void *vertex_usse_alloc(unsigned int size, SceUID *uid, uint32_t *usse_offset)
 {
 	void *mem = NULL;
 
@@ -59,7 +59,7 @@ void vertex_usse_free(SceUID uid)
 	sceKernelFreeMemBlock(uid);
 }
 
-void *fragment_usse_alloc(unsigned int size, SceUID *uid, unsigned int *usse_offset)
+void *fragment_usse_alloc(unsigned int size, SceUID *uid, uint32_t *usse_offset)
 {
 	void *mem = NULL;
 

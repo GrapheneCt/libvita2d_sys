@@ -11,8 +11,7 @@
 #include "utils.h"
 
 #ifdef DEBUG_BUILD
-#  include <stdio.h>
-#  define DEBUG(...) printf(__VA_ARGS__)
+#  define DEBUG(...) sceClibPrintf(__VA_ARGS__)
 #else
 #  define DEBUG(...)
 #endif
@@ -75,8 +74,6 @@ extern const SceGxmProgram texture_v_gxp_start;
 extern const SceGxmProgram texture_f_gxp_start;
 extern const SceGxmProgram texture_tint_f_gxp_start;
 
-int sceAppMgrGetBudgetInfo(void*);
-
 void* mspace_internal;
 int system_mode_flag = 1;
 
@@ -105,6 +102,7 @@ static int vblank_wait = 1;
 static int drawing = 0;
 static int clipping_enabled = 0;
 
+static SceUID renderTargetMemUid;
 static SceUID vdmRingBufferUid;
 static SceUID vertexRingBufferUid;
 static SceUID fragmentRingBufferUid;
@@ -181,7 +179,7 @@ static unsigned int pool_size = 0;
 
 /* Static functions */
 
-static void *patcher_host_alloc(void *user_data, unsigned int size)
+static void *patcher_host_alloc(void *user_data, uint32_t size)
 {
 	return sceClibMspaceMalloc(mspace_internal, size);
 }
@@ -314,7 +312,7 @@ static int vita2d_init_internal_for_system(unsigned int temp_pool_size, SceGxmMu
 		SCE_GXM_MEMORY_ATTRIB_READ,
 		&fragmentRingBufferUid);
 
-	unsigned int fragmentUsseRingBufferOffset;
+	uint32_t fragmentUsseRingBufferOffset;
 	void *fragmentUsseRingBuffer = fragment_usse_alloc(
 		SCE_GXM_DEFAULT_FRAGMENT_USSE_RING_BUFFER_SIZE,
 		&fragmentUsseRingBufferUid,
@@ -346,6 +344,12 @@ static int vita2d_init_internal_for_system(unsigned int temp_pool_size, SceGxmMu
 	renderTargetParams.multisampleMode = msaa;
 	renderTargetParams.multisampleLocations = 0;
 	renderTargetParams.driverMemBlock = -1; // Invalid UID
+
+	// allocate target memblock
+	uint32_t targetMemsize;
+	sceGxmGetRenderTargetMemSize(&renderTargetParams, &targetMemsize);
+	renderTargetMemUid = sceKernelAllocMemBlock("render_target_mem", SCE_KERNEL_MEMBLOCK_TYPE_USER_RW_UNCACHE, targetMemsize, NULL);
+	renderTargetParams.driverMemBlock = renderTargetMemUid;
 
 	// create the render target
 	err = sceGxmCreateRenderTarget(&renderTargetParams, &renderTarget);
@@ -435,13 +439,13 @@ static int vita2d_init_internal_for_system(unsigned int temp_pool_size, SceGxmMu
 		SCE_GXM_MEMORY_ATTRIB_READ | SCE_GXM_MEMORY_ATTRIB_WRITE,
 		&patcherBufferUid);
 
-	unsigned int patcherVertexUsseOffset;
+	uint32_t patcherVertexUsseOffset;
 	void *patcherVertexUsse = vertex_usse_alloc(
 		patcherVertexUsseSize,
 		&patcherVertexUsseUid,
 		&patcherVertexUsseOffset);
 
-	unsigned int patcherFragmentUsseOffset;
+	uint32_t patcherFragmentUsseOffset;
 	void *patcherFragmentUsse = fragment_usse_alloc(
 		patcherFragmentUsseSize,
 		&patcherFragmentUsseUid,
@@ -752,7 +756,7 @@ static int vita2d_init_internal_for_game(unsigned int temp_pool_size, SceGxmMult
 		SCE_GXM_MEMORY_ATTRIB_READ,
 		&fragmentRingBufferUid);
 
-	unsigned int fragmentUsseRingBufferOffset;
+	uint32_t fragmentUsseRingBufferOffset;
 	void *fragmentUsseRingBuffer = fragment_usse_alloc(
 		SCE_GXM_DEFAULT_FRAGMENT_USSE_RING_BUFFER_SIZE,
 		&fragmentUsseRingBufferUid,
@@ -784,6 +788,12 @@ static int vita2d_init_internal_for_game(unsigned int temp_pool_size, SceGxmMult
 	renderTargetParams.multisampleMode = msaa;
 	renderTargetParams.multisampleLocations = 0;
 	renderTargetParams.driverMemBlock = -1; // Invalid UID
+
+	// allocate target memblock
+	uint32_t targetMemsize;
+	sceGxmGetRenderTargetMemSize(&renderTargetParams, &targetMemsize);
+	renderTargetMemUid = sceKernelAllocMemBlock("render_target_mem", SCE_KERNEL_MEMBLOCK_TYPE_USER_RW_UNCACHE, targetMemsize, NULL);
+	renderTargetParams.driverMemBlock = renderTargetMemUid;
 
 	// create the render target
 	err = sceGxmCreateRenderTarget(&renderTargetParams, &renderTarget);
@@ -888,13 +898,13 @@ static int vita2d_init_internal_for_game(unsigned int temp_pool_size, SceGxmMult
 		SCE_GXM_MEMORY_ATTRIB_READ | SCE_GXM_MEMORY_ATTRIB_WRITE,
 		&patcherBufferUid);
 
-	unsigned int patcherVertexUsseOffset;
+	uint32_t patcherVertexUsseOffset;
 	void *patcherVertexUsse = vertex_usse_alloc(
 		patcherVertexUsseSize,
 		&patcherVertexUsseUid,
 		&patcherVertexUsseOffset);
 
-	unsigned int patcherFragmentUsseOffset;
+	uint32_t patcherFragmentUsseOffset;
 	void *patcherFragmentUsse = fragment_usse_alloc(
 		patcherFragmentUsseSize,
 		&patcherFragmentUsseUid,
