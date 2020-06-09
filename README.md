@@ -16,10 +16,10 @@ Loading from FIOS2 overlay (for example, loading directly from PSARC archive) is
 
 **- BMP textures can be used in all applications**
 
-**- JPEG textures are decoded using hardware decoder. Make sure your application is allowed to use phycont memory**
+**- JPEG textures are decoded using hardware decoder. Specify 0 for useMainMemory to use phycont memory or 1 to use main user mamory**
 
 ```
-vita2d_JPEG_decoder_initialize();
+vita2d_JPEG_decoder_initialize(1);
 /* Load your JPEG textures here */
 vita2d_JPEG_decoder_finish();
 ```
