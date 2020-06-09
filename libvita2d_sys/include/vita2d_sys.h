@@ -160,8 +160,8 @@ vita2d_texture *vita2d_load_PNG_buffer(const void *buffer);
 
 vita2d_texture *vita2d_load_JPEG_file(char *filename, int io_type);
 void vita2d_JPEG_decoder_finish(void);
-void vita2d_JPEG_decoder_initialize(void);
-void vita2d_JPEG_decoder_initialize_with_params(SceSize streamBufSize, SceSize decodeBufSize, SceSize coefBufSize);
+void vita2d_JPEG_decoder_initialize(int useMainMemory);
+void vita2d_JPEG_decoder_initialize_with_params(SceSize streamBufSize, SceSize decodeBufSize, SceSize coefBufSize, int useMainMemory);
 vita2d_texture *vita2d_load_JPEG_buffer(const void *buffer, unsigned long buffer_size);
 
 vita2d_texture *vita2d_load_BMP_file(char *filename, int io_type);

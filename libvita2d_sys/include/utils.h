@@ -20,9 +20,9 @@ void *_vita2d_get_clib_mspace();
 /* GPU utils */
 void *gpu_alloc(SceKernelMemBlockType type, unsigned int size, unsigned int alignment, unsigned int attribs, SceUID *uid);
 void gpu_free(SceUID uid);
-void *vertex_usse_alloc(unsigned int size, SceUID *uid, unsigned int *usse_offset);
+void *vertex_usse_alloc(unsigned int size, SceUID *uid, uint32_t *usse_offset);
 void vertex_usse_free(SceUID uid);
-void *fragment_usse_alloc(unsigned int size, SceUID *uid, unsigned int *usse_offset);
+void *fragment_usse_alloc(unsigned int size, SceUID *uid, uint32_t *usse_offset);
 void fragment_usse_free(SceUID uid);
 
 /* Math utils */
