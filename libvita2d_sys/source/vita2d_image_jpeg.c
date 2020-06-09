@@ -442,8 +442,7 @@ int jpegdecInit(SceSize streamBufSize, SceSize decodeBufSize, SceSize coefBufSiz
 	initParam.size = sizeof(SceJpegMJpegInitParam);
 	initParam.maxSplitDecoder = 0;
 	initParam.option = SCE_JPEG_MJPEG_INIT_OPTION_LPDDR2_MEMORY;
-	int ret = sceJpegInitMJpegWithParam(&initParam);
-	sceClibPrintf("INIT: 0x%x\n", ret);
+	sceJpegInitMJpegWithParam(&initParam);
 
 	s_decCtrl.streamBufSize = streamBufSize;
 	s_decCtrl.decodeBufSize = decodeBufSize;
