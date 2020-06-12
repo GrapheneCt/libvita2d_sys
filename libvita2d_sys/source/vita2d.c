@@ -7,6 +7,7 @@
 #include <psp2/message_dialog.h>
 #include <psp2/sysmodule.h>
 #include <psp2/appmgr.h>
+#include <psp2/scebase.h>
 #include "vita2d_sys.h"
 #include "utils.h"
 
@@ -273,7 +274,7 @@ static int vita2d_init_internal_for_system(unsigned int temp_pool_size, SceGxmMu
 	SceSharedFbInfo info_init;
 
 	while (1) {
-		shfb_id = _sceSharedFbOpen(1, 0x03570011);
+		shfb_id = _sceSharedFbOpen(1, SCE_PSP2_SDK_VERSION);
 		sceClibMemset(&info_init, 0, sizeof(info_init));
 		sceSharedFbGetInfo(shfb_id, &info_init);
 		if (info_init.curbuf == 1)
