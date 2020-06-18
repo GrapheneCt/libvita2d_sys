@@ -413,11 +413,6 @@ int readFileFIOS2(char *fileName, unsigned char *pBuffer, SceSize bufSize)
 int vita2d_JPEG_decoder_initialize(void)
 {
 	SceJpegMJpegInitParam initParam;
- 
-	/*streamBufSize = ROUND_UP(streamBufSize, 256);
-	decodeBufSize = ROUND_UP(decodeBufSize, 256);
-	coefBufSize = ROUND_UP(coefBufSize, 256);
-	totalBufSize = ROUND_UP(streamBufSize + decodeBufSize + coefBufSize, memBlockAlign);*/
 
 	/*E Initialize JPEG decoder. */
 	initParam.size = sizeof(SceJpegMJpegInitParam);
@@ -562,7 +557,7 @@ vita2d_texture *vita2d_load_JPEG_file(char *filename, int io_type, int useMainMe
 	if (pFrameInfo.pitchWidth > GXM_TEX_MAX_SIZE || pFrameInfo.pitchHeight > GXM_TEX_MAX_SIZE)
 		return NULL;
 
-	unsigned int size = ROUND_UP(4 * 1024 * pFrameInfo.pitchHeight, 4 * 1024);
+	unsigned int size = ROUND_UP(4 * 1024 * pFrameInfo.pitchHeight, memBlockAlign);
 
 	SceUID tex_data_uid = sceKernelAllocMemBlock("gpu_mem", memBlockType, size, NULL);
 
@@ -744,7 +739,7 @@ vita2d_texture *vita2d_load_JPEG_buffer(const void *buffer, unsigned long buffer
 	if (pFrameInfo.pitchWidth > GXM_TEX_MAX_SIZE || pFrameInfo.pitchHeight > GXM_TEX_MAX_SIZE)
 		return NULL;
 
-	unsigned int size = ROUND_UP(4 * 1024 * pFrameInfo.pitchHeight, 4 * 1024);
+	unsigned int size = ROUND_UP(4 * 1024 * pFrameInfo.pitchHeight, memBlockAlign);
 
 	SceUID tex_data_uid = sceKernelAllocMemBlock("gpu_mem", memBlockType, size, NULL);
 
