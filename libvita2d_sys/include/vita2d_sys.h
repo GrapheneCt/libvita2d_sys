@@ -11,12 +11,8 @@
 extern "C" {
 #endif
 
-#define VITA2D_SYS_NORMAL_BTN_X_MARGIN 37
-#define VITA2D_SYS_NORMAL_BTN_VSIZE 80
-#define VITA2D_SYS_SUB_BTN_VSIZE 70
-#define VITA2D_SYS_HEADER_VSIZE 96
-#define VITA2D_SYS_L_CORNER_BTN_Y 454
-#define VITA2D_SYS_L_CORNER_BTN_HSIZE 90
+#define WIDGET_BUTTON_MAX_TEXT_LEN 256
+
 #define RGBA8(r,g,b,a) ((((a)&0xFF)<<24) | (((b)&0xFF)<<16) | (((g)&0xFF)<<8) | (((r)&0xFF)<<0))
 
 typedef struct vita2d_clear_vertex {
@@ -66,13 +62,24 @@ typedef struct vita2d_font vita2d_font;
 typedef struct vita2d_pgf vita2d_pgf;
 typedef struct vita2d_pvf vita2d_pvf;
 
-typedef struct vita2d_sys_button vita2d_sys_button;
-typedef struct vita2d_sys_marker vita2d_sys_marker;
-typedef struct vita2d_sys_submenu vita2d_sys_submenu;
+typedef struct vita2d_sys_widget {
+	SceUID widget_UID;
+	vita2d_texture* tex;
+	vita2d_pvf* font;
+	float x;
+	float y;
+	float font_dx;
+	float font_dy;
+	char text[WIDGET_BUTTON_MAX_TEXT_LEN];
+	SceBool visible;
+	SceBool highlight;
+} vita2d_sys_widget;
 
 int vita2d_init();
 int vita2d_init_advanced(unsigned int temp_pool_size);
 int vita2d_init_advanced_with_msaa(unsigned int temp_pool_size, SceGxmMultisampleMode msaa);
+int vita2d_init_with_msaa_and_memsize(unsigned int temp_pool_size, unsigned int vdmRingBufferMemsize, unsigned int vertexRingBufferMemsize,
+	unsigned int fragmentRingBufferMemsize, unsigned int fragmentUsseRingBufferMemsize, SceGxmMultisampleMode msaa);
 void vita2d_wait_rendering_done();
 int vita2d_fini();
 
@@ -211,45 +218,16 @@ void vita2d_pvf_embolden_rate(vita2d_pvf *font, float em);
 void vita2d_pvf_skew_rate(vita2d_pvf *font, float ax, float ay);
 void vita2d_pvf_char_size(vita2d_pvf *font, float hs, float vs);
 
-void vita2d_sys_init_sysgraphics(void);
-
-void vita2d_sys_load_tex_button(void);
-void vita2d_sys_load_tex_button_l_corner(void);
-vita2d_sys_button *vita2d_sys_create_button_normal(float x, float y, const char *text, const char *subtext, const char *icon, int hasArrow);
-void vita2d_sys_draw_button(vita2d_sys_button *button);
-
-void vita2d_sys_create_marker(float x, float y, int type);
-void vita2d_sys_draw_marker(void);
-
-void vita2d_sys_visibility_marker(int val);
-void vita2d_sys_coordinates_marker(float x, float y);
-float vita2d_sys_getx_marker(void);
-float vita2d_sys_gety_marker(void);
-void vita2d_sys_refresh_marker(void);
-void vita2d_sys_change_type_marker(int type);
-void vita2d_sys_move_marker(float delta);
-int vita2d_sys_status_marker();
-
-void vita2d_sys_coordinates_button(vita2d_sys_button *button, float x, float y);
-void vita2d_sys_highlight_button(vita2d_sys_button *button, int val);
-void vita2d_sys_visibility_button(vita2d_sys_button *button, int val);
-float vita2d_sys_getx_button(vita2d_sys_button *button);
-float vita2d_sys_gety_button(vita2d_sys_button *button);
-void vita2d_sys_text_button(vita2d_sys_button *button, const char *text);
-void vita2d_sys_icon_button(vita2d_sys_button *button, const char *icon);
-
-vita2d_sys_button *vita2d_sys_create_button_l_corner(const char *icon, int colorR, int colorG, int colorB, int type);
-
-void vita2d_sys_create_settings_header(const char *text);
-void vita2d_sys_draw_settings_header(void);
-void vita2d_sys_change_text_header(const char *text);
-
-void vita2d_sys_create_submenu(float xDelta);
-void vita2d_sys_visibility_submenu(int val);
-void vita2d_sys_draw_submenu(void);
-int vita2d_sys_getx_submenu(void);
-vita2d_sys_button *vita2d_sys_create_button_submenu(float y, const char *text);
-void vita2d_sys_mark_button_submenu(vita2d_sys_button *button, int mark);
+vita2d_sys_widget* vita2d_sys_create_widget_button(vita2d_texture* texture, vita2d_pvf* font, float initX, float initY, float fontDeltaX, float fontDeltaY, const char* text);
+void vita2d_sys_delete_widget(vita2d_sys_widget* widget);
+void vita2d_sys_draw_widget(vita2d_sys_widget* widget);
+void vita2d_sys_widget_set_xy(vita2d_sys_widget* widget, float x, float y);
+void vita2d_sys_widget_set_text(vita2d_sys_widget* widget, const char* text);
+void vita2d_sys_widget_set_visibility(vita2d_sys_widget* widget, SceBool visibility);
+void vita2d_sys_widget_set_highlight(vita2d_sys_widget* widget, SceBool highlight);
+float vita2d_sys_widget_get_x(vita2d_sys_widget* widget);
+float vita2d_sys_widget_get_y(vita2d_sys_widget* widget);
+void vita2d_sys_widget_set_highlight_max(void);
 
 #ifdef __cplusplus
 }
