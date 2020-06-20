@@ -47,7 +47,7 @@ typedef struct SceSharedFbInfo { // size is 0x58
 	int unk_3C;
 	int unk_40;
 	int unk_44;
-	int vsync;
+	int owner;
 	int unk_4C;
 	int unk_50;
 	int unk_54;
@@ -75,14 +75,9 @@ extern const SceGxmProgram texture_v_gxp_start;
 extern const SceGxmProgram texture_f_gxp_start;
 extern const SceGxmProgram texture_tint_f_gxp_start;
 
-void* mspace_internal;
-int system_mode_flag = 1;
-
 /* Static variables */
 
 static SceSharedFbInfo info;
-
-static int pgf_module_was_loaded = 0;
 
 static const SceGxmProgram *const clearVertexProgramGxp         = &clear_v_gxp_start;
 static const SceGxmProgram *const clearFragmentProgramGxp       = &clear_f_gxp_start;
@@ -149,6 +144,9 @@ static vita2d_clear_vertex *clearVertices = NULL;
 static uint16_t *linearIndices = NULL;
 
 /* Shared with other .c */
+void* mspace_internal;
+int system_mode_flag = 1;
+int pgf_module_was_loaded = 10;
 float _vita2d_ortho_matrix[4*4];
 SceGxmContext *_vita2d_context = NULL;
 SceGxmVertexProgram *_vita2d_colorVertexProgram = NULL;
@@ -256,7 +254,8 @@ static void display_callback(const void *callback_data)
 	}
 }
 
-static int vita2d_init_internal_for_system(unsigned int temp_pool_size, SceGxmMultisampleMode msaa)
+static int vita2d_init_internal_for_system(unsigned int temp_pool_size, unsigned int vdmRingBufferMemsize, unsigned int vertexRingBufferMemsize,
+	unsigned int fragmentRingBufferMemsize, unsigned int fragmentUsseRingBufferMemsize, SceGxmMultisampleMode msaa)
 {
 	int err;
 	unsigned int i;
@@ -271,51 +270,48 @@ static int vita2d_init_internal_for_system(unsigned int temp_pool_size, SceGxmMu
 	err = sceGxmVshInitialize(&gxm_init_params_internal);
 	DEBUG("sceGxmVshInitialize(): 0x%08X\n", err);
 
-	SceSharedFbInfo info_init;
-
 	while (1) {
 		shfb_id = _sceSharedFbOpen(1, SCE_PSP2_SDK_VERSION);
-		sceClibMemset(&info_init, 0, sizeof(info_init));
-		sceSharedFbGetInfo(shfb_id, &info_init);
-		if (info_init.curbuf == 1)
+		sceSharedFbGetInfo(shfb_id, &info);
+		if (info.curbuf == 1)
 			sceSharedFbClose(shfb_id);
 		else
 			break;
 	}
 
-	err = sceGxmMapMemory(info_init.base1, info_init.memsize, 3);
-	DEBUG("sceGxmMapMemory(info_init.base1, info_init.memsize, 3): 0x%08X\n", err);
+	vita2d_texture_set_alloc_memblock_type(SCE_KERNEL_MEMBLOCK_TYPE_USER_RW_UNCACHE);
 
-	displayBufferData[0] = info_init.base1;
-	displayBufferData[1] = info_init.base2;
+	err = sceGxmMapMemory(info.base1, info.memsize, SCE_GXM_MEMORY_ATTRIB_READ | SCE_GXM_MEMORY_ATTRIB_WRITE);
+	DEBUG("SHAREDFB: sceGxmMapMemory(): 0x%08X\n", err);
 
-	sceClibMemset(&info, 0, sizeof(info_init));
+	displayBufferData[0] = info.base1;
+	displayBufferData[1] = info.base2;
 
 	// allocate ring buffer memory using default sizes
 	void *vdmRingBuffer = gpu_alloc(
 		SCE_KERNEL_MEMBLOCK_TYPE_USER_RW_UNCACHE,
-		SCE_GXM_DEFAULT_VDM_RING_BUFFER_SIZE,
+		vdmRingBufferMemsize,
 		4,
 		SCE_GXM_MEMORY_ATTRIB_READ,
 		&vdmRingBufferUid);
 
 	void *vertexRingBuffer = gpu_alloc(
 		SCE_KERNEL_MEMBLOCK_TYPE_USER_RW_UNCACHE,
-		SCE_GXM_DEFAULT_VERTEX_RING_BUFFER_SIZE,
+		vertexRingBufferMemsize,
 		4,
 		SCE_GXM_MEMORY_ATTRIB_READ,
 		&vertexRingBufferUid);
 
 	void *fragmentRingBuffer = gpu_alloc(
 		SCE_KERNEL_MEMBLOCK_TYPE_USER_RW_UNCACHE,
-		SCE_GXM_DEFAULT_FRAGMENT_RING_BUFFER_SIZE,
+		fragmentRingBufferMemsize,
 		4,
 		SCE_GXM_MEMORY_ATTRIB_READ,
 		&fragmentRingBufferUid);
 
 	uint32_t fragmentUsseRingBufferOffset;
 	void *fragmentUsseRingBuffer = fragment_usse_alloc(
-		SCE_GXM_DEFAULT_FRAGMENT_USSE_RING_BUFFER_SIZE,
+		fragmentUsseRingBufferMemsize,
 		&fragmentUsseRingBufferUid,
 		&fragmentUsseRingBufferOffset);
 
@@ -323,13 +319,13 @@ static int vita2d_init_internal_for_system(unsigned int temp_pool_size, SceGxmMu
 	contextParams.hostMem = sceClibMspaceMalloc(mspace_internal, SCE_GXM_MINIMUM_CONTEXT_HOST_MEM_SIZE);
 	contextParams.hostMemSize = SCE_GXM_MINIMUM_CONTEXT_HOST_MEM_SIZE;
 	contextParams.vdmRingBufferMem = vdmRingBuffer;
-	contextParams.vdmRingBufferMemSize = SCE_GXM_DEFAULT_VDM_RING_BUFFER_SIZE;
+	contextParams.vdmRingBufferMemSize = vdmRingBufferMemsize;
 	contextParams.vertexRingBufferMem = vertexRingBuffer;
-	contextParams.vertexRingBufferMemSize = SCE_GXM_DEFAULT_VERTEX_RING_BUFFER_SIZE;
+	contextParams.vertexRingBufferMemSize = vertexRingBufferMemsize;
 	contextParams.fragmentRingBufferMem = fragmentRingBuffer;
-	contextParams.fragmentRingBufferMemSize = SCE_GXM_DEFAULT_FRAGMENT_RING_BUFFER_SIZE;
+	contextParams.fragmentRingBufferMemSize = fragmentRingBufferMemsize;
 	contextParams.fragmentUsseRingBufferMem = fragmentUsseRingBuffer;
-	contextParams.fragmentUsseRingBufferMemSize = SCE_GXM_DEFAULT_FRAGMENT_USSE_RING_BUFFER_SIZE;
+	contextParams.fragmentUsseRingBufferMemSize = fragmentUsseRingBufferMemsize;
 	contextParams.fragmentUsseRingBufferOffset = fragmentUsseRingBufferOffset;
 
 	err = sceGxmCreateContext(&contextParams, &_vita2d_context);
@@ -709,16 +705,12 @@ static int vita2d_init_internal_for_system(unsigned int temp_pool_size, SceGxmMu
 
 	matrix_init_orthographic(_vita2d_ortho_matrix, 0.0f, DISPLAY_WIDTH, DISPLAY_HEIGHT, 0.0f, 0.0f, 1.0f);
 
-	pgf_module_was_loaded = sceSysmoduleIsLoaded(SCE_SYSMODULE_PGF);
-
-	if (pgf_module_was_loaded != SCE_SYSMODULE_LOADED)
-		sceSysmoduleLoadModule(SCE_SYSMODULE_PGF);
-
 	vita2d_initialized = 1;
 	return 1;
 }
 
-static int vita2d_init_internal_for_game(unsigned int temp_pool_size, SceGxmMultisampleMode msaa)
+static int vita2d_init_internal_for_game(unsigned int temp_pool_size, unsigned int vdmRingBufferMemsize, unsigned int vertexRingBufferMemsize,
+	unsigned int fragmentRingBufferMemsize, unsigned int fragmentUsseRingBufferMemsize, SceGxmMultisampleMode msaa)
 {
 	int err;
 	unsigned int i, x, y;
@@ -738,28 +730,28 @@ static int vita2d_init_internal_for_game(unsigned int temp_pool_size, SceGxmMult
 	// allocate ring buffer memory using default sizes
 	void *vdmRingBuffer = gpu_alloc(
 		SCE_KERNEL_MEMBLOCK_TYPE_USER_RW_UNCACHE,
-		SCE_GXM_DEFAULT_VDM_RING_BUFFER_SIZE,
+		vdmRingBufferMemsize,
 		4,
 		SCE_GXM_MEMORY_ATTRIB_READ,
 		&vdmRingBufferUid);
 
 	void *vertexRingBuffer = gpu_alloc(
 		SCE_KERNEL_MEMBLOCK_TYPE_USER_RW_UNCACHE,
-		SCE_GXM_DEFAULT_VERTEX_RING_BUFFER_SIZE,
+		vertexRingBufferMemsize,
 		4,
 		SCE_GXM_MEMORY_ATTRIB_READ,
 		&vertexRingBufferUid);
 
 	void *fragmentRingBuffer = gpu_alloc(
 		SCE_KERNEL_MEMBLOCK_TYPE_USER_RW_UNCACHE,
-		SCE_GXM_DEFAULT_FRAGMENT_RING_BUFFER_SIZE,
+		fragmentRingBufferMemsize,
 		4,
 		SCE_GXM_MEMORY_ATTRIB_READ,
 		&fragmentRingBufferUid);
 
 	uint32_t fragmentUsseRingBufferOffset;
 	void *fragmentUsseRingBuffer = fragment_usse_alloc(
-		SCE_GXM_DEFAULT_FRAGMENT_USSE_RING_BUFFER_SIZE,
+		fragmentUsseRingBufferMemsize,
 		&fragmentUsseRingBufferUid,
 		&fragmentUsseRingBufferOffset);
 
@@ -767,13 +759,13 @@ static int vita2d_init_internal_for_game(unsigned int temp_pool_size, SceGxmMult
 	contextParams.hostMem = sceClibMspaceMalloc(mspace_internal, SCE_GXM_MINIMUM_CONTEXT_HOST_MEM_SIZE);
 	contextParams.hostMemSize = SCE_GXM_MINIMUM_CONTEXT_HOST_MEM_SIZE;
 	contextParams.vdmRingBufferMem = vdmRingBuffer;
-	contextParams.vdmRingBufferMemSize = SCE_GXM_DEFAULT_VDM_RING_BUFFER_SIZE;
+	contextParams.vdmRingBufferMemSize = vdmRingBufferMemsize;
 	contextParams.vertexRingBufferMem = vertexRingBuffer;
-	contextParams.vertexRingBufferMemSize = SCE_GXM_DEFAULT_VERTEX_RING_BUFFER_SIZE;
+	contextParams.vertexRingBufferMemSize = vertexRingBufferMemsize;
 	contextParams.fragmentRingBufferMem = fragmentRingBuffer;
-	contextParams.fragmentRingBufferMemSize = SCE_GXM_DEFAULT_FRAGMENT_RING_BUFFER_SIZE;
+	contextParams.fragmentRingBufferMemSize = fragmentRingBufferMemsize;
 	contextParams.fragmentUsseRingBufferMem = fragmentUsseRingBuffer;
-	contextParams.fragmentUsseRingBufferMemSize = SCE_GXM_DEFAULT_FRAGMENT_USSE_RING_BUFFER_SIZE;
+	contextParams.fragmentUsseRingBufferMemSize = fragmentUsseRingBufferMemsize;
 	contextParams.fragmentUsseRingBufferOffset = fragmentUsseRingBufferOffset;
 
 	err = sceGxmCreateContext(&contextParams, &_vita2d_context);
@@ -1168,16 +1160,12 @@ static int vita2d_init_internal_for_game(unsigned int temp_pool_size, SceGxmMult
 
 	matrix_init_orthographic(_vita2d_ortho_matrix, 0.0f, DISPLAY_WIDTH, DISPLAY_HEIGHT, 0.0f, 0.0f, 1.0f);
 
-	pgf_module_was_loaded = sceSysmoduleIsLoaded(SCE_SYSMODULE_PGF);
-
-	if (pgf_module_was_loaded != SCE_SYSMODULE_LOADED)
-		sceSysmoduleLoadModule(SCE_SYSMODULE_PGF);
-
 	vita2d_initialized = 1;
 	return 1;
 }
 
-static int vita2d_init_internal(unsigned int temp_pool_size, SceGxmMultisampleMode msaa)
+static int vita2d_init_internal(unsigned int temp_pool_size, unsigned int vdmRingBufferMemsize, unsigned int vertexRingBufferMemsize,
+	unsigned int fragmentRingBufferMemsize, unsigned int fragmentUsseRingBufferMemsize, SceGxmMultisampleMode msaa)
 {
 	int err;
 
@@ -1196,24 +1184,38 @@ static int vita2d_init_internal(unsigned int temp_pool_size, SceGxmMultisampleMo
 	DEBUG("system_mode_flag: %d\n", system_mode_flag);
 
 	if (system_mode_flag)
-		return vita2d_init_internal_for_system(temp_pool_size, msaa);
+		return vita2d_init_internal_for_system(temp_pool_size, vdmRingBufferMemsize, vertexRingBufferMemsize, fragmentRingBufferMemsize, 
+			fragmentUsseRingBufferMemsize, msaa);
 	else
-		return vita2d_init_internal_for_game(temp_pool_size, msaa);
+		return vita2d_init_internal_for_game(temp_pool_size, vdmRingBufferMemsize, vertexRingBufferMemsize, fragmentRingBufferMemsize, 
+			fragmentUsseRingBufferMemsize, msaa);
 }
 
 int vita2d_init()
 {
-	return vita2d_init_internal(DEFAULT_TEMP_POOL_SIZE, SCE_GXM_MULTISAMPLE_NONE);
+	return vita2d_init_internal(DEFAULT_TEMP_POOL_SIZE, SCE_GXM_DEFAULT_VDM_RING_BUFFER_SIZE, SCE_GXM_DEFAULT_VERTEX_RING_BUFFER_SIZE,
+		SCE_GXM_DEFAULT_FRAGMENT_RING_BUFFER_SIZE, SCE_GXM_DEFAULT_FRAGMENT_USSE_RING_BUFFER_SIZE, SCE_GXM_MULTISAMPLE_NONE);
 }
 
 int vita2d_init_advanced(unsigned int temp_pool_size)
 {
-	return vita2d_init_internal(temp_pool_size, SCE_GXM_MULTISAMPLE_NONE);
+	return vita2d_init_internal(temp_pool_size, SCE_GXM_DEFAULT_VDM_RING_BUFFER_SIZE, SCE_GXM_DEFAULT_VERTEX_RING_BUFFER_SIZE,
+		SCE_GXM_DEFAULT_FRAGMENT_RING_BUFFER_SIZE, SCE_GXM_DEFAULT_FRAGMENT_USSE_RING_BUFFER_SIZE, SCE_GXM_MULTISAMPLE_NONE);
 }
 
 int vita2d_init_advanced_with_msaa(unsigned int temp_pool_size, SceGxmMultisampleMode msaa)
 {
-	return vita2d_init_internal(temp_pool_size, msaa);
+	return vita2d_init_internal(temp_pool_size, SCE_GXM_DEFAULT_VDM_RING_BUFFER_SIZE, SCE_GXM_DEFAULT_VERTEX_RING_BUFFER_SIZE, 
+		SCE_GXM_DEFAULT_FRAGMENT_RING_BUFFER_SIZE, SCE_GXM_DEFAULT_FRAGMENT_USSE_RING_BUFFER_SIZE, msaa);
+}
+
+int vita2d_init_with_msaa_and_memsize(unsigned int temp_pool_size, unsigned int vdmRingBufferMemsize, unsigned int vertexRingBufferMemsize, 
+	unsigned int fragmentRingBufferMemsize, unsigned int fragmentUsseRingBufferMemsize, SceGxmMultisampleMode msaa)
+{
+	if (!temp_pool_size)
+		return vita2d_init_internal(DEFAULT_TEMP_POOL_SIZE, vdmRingBufferMemsize, vertexRingBufferMemsize, fragmentRingBufferMemsize, fragmentUsseRingBufferMemsize, msaa);
+	else
+		return vita2d_init_internal(temp_pool_size, vdmRingBufferMemsize, vertexRingBufferMemsize, fragmentRingBufferMemsize, fragmentUsseRingBufferMemsize, msaa);
 }
 
 void vita2d_wait_rendering_done()
@@ -1348,7 +1350,7 @@ void vita2d_start_drawing_advanced(vita2d_texture *target, unsigned int flags)
 {
 	if (system_mode_flag) {
 		sceSharedFbBegin(shfb_id, &info);
-		info.vsync = 1;
+		info.owner = 1;
 		if (info.curbuf == 1)
 			bufferIndex = 0;
 		else
@@ -1387,9 +1389,9 @@ void vita2d_start_drawing_advanced(vita2d_texture *target, unsigned int flags)
 void vita2d_end_drawing()
 {
 	sceGxmEndScene(_vita2d_context, NULL, NULL);
-	drawing = 0;
 	if (system_mode_flag && vblank_wait)
 		sceDisplayWaitVblankStart();
+	drawing = 0;
 }
 
 void vita2d_end_shfb()
@@ -1397,7 +1399,6 @@ void vita2d_end_shfb()
 	if (system_mode_flag)
 		sceSharedFbEnd(shfb_id);
 	else {
-		sceGxmPadHeartbeat(&displaySurface[bufferIndex], displayBufferSync[bufferIndex]);
 
 		int oldFb = (bufferIndex + 1) % DISPLAY_BUFFER_COUNT;
 

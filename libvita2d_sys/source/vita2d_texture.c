@@ -6,7 +6,7 @@
 #include "shared.h"
 
 #define GXM_TEX_MAX_SIZE 4096
-static SceKernelMemBlockType MemBlockType = SCE_KERNEL_MEMBLOCK_TYPE_USER_RW_UNCACHE;
+static SceKernelMemBlockType MemBlockType = SCE_KERNEL_MEMBLOCK_TYPE_USER_CDRAM_RW;
 
 extern void* mspace_internal;
 
@@ -40,7 +40,7 @@ static int tex_format_to_bytespp(SceGxmTextureFormat format)
 
 void vita2d_texture_set_alloc_memblock_type(SceKernelMemBlockType type)
 {
-	MemBlockType = (type == 0) ? SCE_KERNEL_MEMBLOCK_TYPE_USER_RW_UNCACHE : type;
+	MemBlockType = (type == 0) ? SCE_KERNEL_MEMBLOCK_TYPE_USER_CDRAM_RW : type;
 }
 
 SceKernelMemBlockType vita2d_texture_get_alloc_memblock_type()

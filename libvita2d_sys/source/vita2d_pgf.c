@@ -2,6 +2,7 @@
 #include <psp2/kernel/sysmem.h>
 #include <psp2/kernel/clib.h>
 #include <psp2/kernel/threadmgr.h>
+#include <psp2/sysmodule.h>
 #include <math.h>
 #include "vita2d_sys.h"
 #include "texture_atlas.h"
@@ -13,6 +14,7 @@
 #define ATLAS_DEFAULT_H 512
 
 extern void* mspace_internal;
+extern int pgf_module_was_loaded;
 
 extern void* sceClibMspaceMemalign(void* space, unsigned int alignment, unsigned int size);
 
@@ -55,6 +57,11 @@ static void vita2d_load_pgf_post(vita2d_pgf *font) {
 
 static vita2d_pgf *vita2d_load_pgf_pre(int numFonts)
 {
+	pgf_module_was_loaded = sceSysmoduleIsLoaded(SCE_SYSMODULE_PGF);
+
+	if (pgf_module_was_loaded != SCE_SYSMODULE_LOADED)
+		sceSysmoduleLoadModule(SCE_SYSMODULE_PGF);
+
 	unsigned int error;
 	vita2d_pgf *font = sceClibMspaceMalloc(mspace_internal, sizeof(*font));
 	if (!font)
