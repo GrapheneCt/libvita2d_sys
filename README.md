@@ -18,7 +18,8 @@ To set custom resolution, call vita2d_display_set_resolution() before initializi
 void vita2d_display_set_resolution(int hRes, int vRes); //Set display resolution.
 ```
 
-Use Sharpscale to unlock resolutions above 960x544: https://forum.devchroma.nl/index.php/topic,112.0.html
+Native 1280x725 and 1920x1088 resolutions are supported.
+Use Sharpscale to be able to use 1280x720 and 1920x1080: https://forum.devchroma.nl/index.php/topic,112.0.html
 
 ## Textures
 
