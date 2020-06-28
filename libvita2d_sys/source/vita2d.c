@@ -19,9 +19,6 @@
 
 /* Defines */
 
-#define DISPLAY_WIDTH				960
-#define DISPLAY_HEIGHT				544
-#define DISPLAY_STRIDE_IN_PIXELS	960
 #define DISPLAY_COLOR_FORMAT		SCE_GXM_COLOR_FORMAT_A8B8G8R8
 #define DISPLAY_PIXEL_FORMAT		SCE_DISPLAY_PIXELFORMAT_A8B8G8R8
 #define DISPLAY_BUFFER_COUNT		2
@@ -87,13 +84,17 @@ static const SceGxmProgram *const textureVertexProgramGxp       = &texture_v_gxp
 static const SceGxmProgram *const textureFragmentProgramGxp     = &texture_f_gxp_start;
 static const SceGxmProgram *const textureTintFragmentProgramGxp = &texture_tint_f_gxp_start;
 
+static int display_hres = 960;
+static int display_vres = 544;
+static int display_stride = 960;
+
 static int vita2d_initialized = 0;
 static float clear_color[4] = {0.0f, 0.0f, 0.0f, 1.0f};
 static unsigned int clear_color_u = 0xFF000000;
 static int clip_rect_x_min = 0;
 static int clip_rect_y_min = 0;
-static int clip_rect_x_max = DISPLAY_WIDTH;
-static int clip_rect_y_max = DISPLAY_HEIGHT;
+static int clip_rect_x_max = 960; //<- change this
+static int clip_rect_y_max = 544; //<- change this
 static int vblank_wait = 1;
 static int drawing = 0;
 static int clipping_enabled = 0;
@@ -243,10 +244,10 @@ static void display_callback(const void *callback_data)
 	sceClibMemset(&framebuf, 0x00, sizeof(SceDisplayFrameBuf));
 	framebuf.size = sizeof(SceDisplayFrameBuf);
 	framebuf.base = display_data->address;
-	framebuf.pitch = DISPLAY_STRIDE_IN_PIXELS;
+	framebuf.pitch = display_stride;
 	framebuf.pixelformat = DISPLAY_PIXEL_FORMAT;
-	framebuf.width = DISPLAY_WIDTH;
-	framebuf.height = DISPLAY_HEIGHT;
+	framebuf.width = display_hres;
+	framebuf.height = display_vres;
 	sceDisplaySetFrameBuf(&framebuf, SCE_DISPLAY_SETBUF_NEXTFRAME);
 
 	if (vblank_wait) {
@@ -335,8 +336,8 @@ static int vita2d_init_internal_for_system(unsigned int temp_pool_size, unsigned
 	SceGxmRenderTargetParams renderTargetParams;
 	sceClibMemset(&renderTargetParams, 0, sizeof(SceGxmRenderTargetParams));
 	renderTargetParams.flags = 0;
-	renderTargetParams.width = DISPLAY_WIDTH;
-	renderTargetParams.height = DISPLAY_HEIGHT;
+	renderTargetParams.width = display_hres;
+	renderTargetParams.height = display_vres;
 	renderTargetParams.scenesPerFrame = 1;
 	renderTargetParams.multisampleMode = msaa;
 	renderTargetParams.multisampleLocations = 0;
@@ -362,9 +363,9 @@ static int vita2d_init_internal_for_system(unsigned int temp_pool_size, unsigned
 			SCE_GXM_COLOR_SURFACE_LINEAR,
 			(msaa == SCE_GXM_MULTISAMPLE_NONE) ? SCE_GXM_COLOR_SURFACE_SCALE_NONE : SCE_GXM_COLOR_SURFACE_SCALE_MSAA_DOWNSCALE,
 			SCE_GXM_OUTPUT_REGISTER_SIZE_32BIT,
-			DISPLAY_WIDTH,
-			DISPLAY_HEIGHT,
-			DISPLAY_STRIDE_IN_PIXELS,
+			display_hres,
+			display_vres,
+			display_stride,
 			displayBufferData[i]);
 
 		// create a sync object that we will associate with this buffer
@@ -372,8 +373,8 @@ static int vita2d_init_internal_for_system(unsigned int temp_pool_size, unsigned
 	}
 
 	// compute the memory footprint of the depth buffer
-	const unsigned int alignedWidth = ALIGN(DISPLAY_WIDTH, SCE_GXM_TILE_SIZEX);
-	const unsigned int alignedHeight = ALIGN(DISPLAY_HEIGHT, SCE_GXM_TILE_SIZEY);
+	const unsigned int alignedWidth = ALIGN(display_hres, SCE_GXM_TILE_SIZEX);
+	const unsigned int alignedHeight = ALIGN(display_vres, SCE_GXM_TILE_SIZEY);
 	unsigned int sampleCount = alignedWidth * alignedHeight;
 	unsigned int depthStrideInSamples = alignedWidth;
 	if (msaa == SCE_GXM_MULTISAMPLE_4X) {
@@ -703,7 +704,7 @@ static int vita2d_init_internal_for_system(unsigned int temp_pool_size, unsigned
 		&poolUid);
 
 
-	matrix_init_orthographic(_vita2d_ortho_matrix, 0.0f, DISPLAY_WIDTH, DISPLAY_HEIGHT, 0.0f, 0.0f, 1.0f);
+	matrix_init_orthographic(_vita2d_ortho_matrix, 0.0f, display_hres, display_vres, 0.0f, 0.0f, 1.0f);
 
 	vita2d_initialized = 1;
 	return 1;
@@ -775,8 +776,8 @@ static int vita2d_init_internal_for_game(unsigned int temp_pool_size, unsigned i
 	SceGxmRenderTargetParams renderTargetParams;
 	sceClibMemset(&renderTargetParams, 0, sizeof(SceGxmRenderTargetParams));
 	renderTargetParams.flags = 0;
-	renderTargetParams.width = DISPLAY_WIDTH;
-	renderTargetParams.height = DISPLAY_HEIGHT;
+	renderTargetParams.width = display_hres;
+	renderTargetParams.height = display_vres;
 	renderTargetParams.scenesPerFrame = 1;
 	renderTargetParams.multisampleMode = msaa;
 	renderTargetParams.multisampleLocations = 0;
@@ -797,15 +798,15 @@ static int vita2d_init_internal_for_game(unsigned int temp_pool_size, unsigned i
 		// allocate memory for display
 		displayBufferData[i] = gpu_alloc(
 			SCE_KERNEL_MEMBLOCK_TYPE_USER_CDRAM_RW,
-			4 * DISPLAY_STRIDE_IN_PIXELS*DISPLAY_HEIGHT,
+			4 * display_stride*display_vres,
 			SCE_GXM_COLOR_SURFACE_ALIGNMENT,
 			SCE_GXM_MEMORY_ATTRIB_READ | SCE_GXM_MEMORY_ATTRIB_WRITE,
 			&displayBufferUid[i]);
 
 		// memset the buffer to black
-		for (y = 0; y < DISPLAY_HEIGHT; y++) {
-			unsigned int *row = (unsigned int *)displayBufferData[i] + y * DISPLAY_STRIDE_IN_PIXELS;
-			for (x = 0; x < DISPLAY_WIDTH; x++) {
+		for (y = 0; y < display_vres; y++) {
+			unsigned int *row = (unsigned int *)displayBufferData[i] + y * display_stride;
+			for (x = 0; x < display_hres; x++) {
 				row[x] = 0xff000000;
 			}
 		}
@@ -817,9 +818,9 @@ static int vita2d_init_internal_for_game(unsigned int temp_pool_size, unsigned i
 			SCE_GXM_COLOR_SURFACE_LINEAR,
 			(msaa == SCE_GXM_MULTISAMPLE_NONE) ? SCE_GXM_COLOR_SURFACE_SCALE_NONE : SCE_GXM_COLOR_SURFACE_SCALE_MSAA_DOWNSCALE,
 			SCE_GXM_OUTPUT_REGISTER_SIZE_32BIT,
-			DISPLAY_WIDTH,
-			DISPLAY_HEIGHT,
-			DISPLAY_STRIDE_IN_PIXELS,
+			display_hres,
+			display_vres,
+			display_stride,
 			displayBufferData[i]);
 
 		// create a sync object that we will associate with this buffer
@@ -827,8 +828,8 @@ static int vita2d_init_internal_for_game(unsigned int temp_pool_size, unsigned i
 	}
 
 	// compute the memory footprint of the depth buffer
-	const unsigned int alignedWidth = ALIGN(DISPLAY_WIDTH, SCE_GXM_TILE_SIZEX);
-	const unsigned int alignedHeight = ALIGN(DISPLAY_HEIGHT, SCE_GXM_TILE_SIZEY);
+	const unsigned int alignedWidth = ALIGN(display_hres, SCE_GXM_TILE_SIZEX);
+	const unsigned int alignedHeight = ALIGN(display_vres, SCE_GXM_TILE_SIZEY);
 	unsigned int sampleCount = alignedWidth * alignedHeight;
 	unsigned int depthStrideInSamples = alignedWidth;
 	if (msaa == SCE_GXM_MULTISAMPLE_4X) {
@@ -1158,7 +1159,7 @@ static int vita2d_init_internal_for_game(unsigned int temp_pool_size, unsigned i
 		&poolUid);
 
 
-	matrix_init_orthographic(_vita2d_ortho_matrix, 0.0f, DISPLAY_WIDTH, DISPLAY_HEIGHT, 0.0f, 0.0f, 1.0f);
+	matrix_init_orthographic(_vita2d_ortho_matrix, 0.0f, display_hres, display_vres, 0.0f, 0.0f, 1.0f);
 
 	vita2d_initialized = 1;
 	return 1;
@@ -1189,6 +1190,13 @@ static int vita2d_init_internal(unsigned int temp_pool_size, unsigned int vdmRin
 	else
 		return vita2d_init_internal_for_game(temp_pool_size, vdmRingBufferMemsize, vertexRingBufferMemsize, fragmentRingBufferMemsize, 
 			fragmentUsseRingBufferMemsize, msaa);
+}
+
+void vita2d_display_set_resolution(int hRes, int vRes) 
+{
+	display_hres = hRes;
+	display_vres = vRes;
+	display_stride = hRes;
 }
 
 int vita2d_init()
@@ -1263,7 +1271,7 @@ int vita2d_fini()
 	else {
 		for (i = 0; i < DISPLAY_BUFFER_COUNT; i++) {
 			// clear the buffer then deallocate
-			sceClibMemset(displayBufferData[i], 0, DISPLAY_HEIGHT*DISPLAY_STRIDE_IN_PIXELS * 4);
+			sceClibMemset(displayBufferData[i], 0, display_vres*display_stride * 4);
 			gpu_free(displayBufferUid[i]);
 
 			// destroy the sync object
@@ -1456,7 +1464,7 @@ void vita2d_set_clip_rectangle(int x_min, int y_min, int x_max, int y_max)
 			SCE_GXM_STENCIL_OP_ZERO,
 			0xFF,
 			0xFF);
-		vita2d_draw_rectangle(0, 0, DISPLAY_WIDTH, DISPLAY_HEIGHT, 0);
+		vita2d_draw_rectangle(0, 0, display_hres, display_vres, 0);
 		// set the stencil to 1 in the desired region
 		sceGxmSetFrontStencilFunc(
 			_vita2d_context,
@@ -1505,9 +1513,9 @@ int vita2d_common_dialog_update()
 
 	updateParam.renderTarget.colorFormat    = DISPLAY_COLOR_FORMAT;
 	updateParam.renderTarget.surfaceType    = SCE_GXM_COLOR_SURFACE_LINEAR;
-	updateParam.renderTarget.width          = DISPLAY_WIDTH;
-	updateParam.renderTarget.height         = DISPLAY_HEIGHT;
-	updateParam.renderTarget.strideInPixels = DISPLAY_STRIDE_IN_PIXELS;
+	updateParam.renderTarget.width          = display_hres;
+	updateParam.renderTarget.height         = display_vres;
+	updateParam.renderTarget.strideInPixels = display_stride;
 
 	updateParam.renderTarget.colorSurfaceData = displayBufferData[bufferIndex];
 	updateParam.renderTarget.depthSurfaceData = depthBufferData;
