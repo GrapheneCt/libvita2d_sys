@@ -84,11 +84,11 @@ void vita2d_wait_rendering_done();
 int vita2d_fini();
 
 void vita2d_clear_screen();
-void vita2d_swap_buffers();
 
 SceUID vita2d_get_shfbid();
 void vita2d_end_shfb();
 
+void vita2d_display_set_resolution(int hRes, int vRes);
 void vita2d_clib_pass_mspace(void* space);
 
 void vita2d_start_drawing();
