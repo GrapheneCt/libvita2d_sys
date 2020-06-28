@@ -10,6 +10,16 @@ If your application is running in "system mode", you can control shared fb direc
 ```
 SceUID vita2d_get_shfbid(); //Returns shared fb id opened by application.
 ```
+
+## Custom resolution
+
+To set custom resolution, call vita2d_display_set_resolution() before initializing the library:
+```
+void vita2d_display_set_resolution(int hRes, int vRes); //Set display resolution.
+```
+
+Use Sharpscale to unlock resolutions above 960x544: https://forum.devchroma.nl/index.php/topic,112.0.html
+
 ## Textures
 
 Loading from FIOS2 overlay (for example, loading directly from PSARC archive) is supported. When calling vita2d_load_XXX_file() specify 1 for io_type to use FIOS2 or 0 to use SceIo. When using FIOS2, remember to specify your mounted path to the file instead of the actual file path. 
