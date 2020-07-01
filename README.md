@@ -35,7 +35,7 @@ vita2d_JPEG_decoder_initialize(1);
 vita2d_JPEG_decoder_finish();
 ```
 
-**- PNG textures can only be used in applications with stdC heap available**
+**- PNG textures can only be used in applications with newlib heap available**
 
 ## Initialization
 
