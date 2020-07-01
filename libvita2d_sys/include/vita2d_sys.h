@@ -170,11 +170,17 @@ vita2d_texture *vita2d_load_JPEG_buffer(const void *buffer, unsigned long buffer
 int vita2d_JPEG_decoder_finish(void);
 int vita2d_JPEG_decoder_initialize(void);
 
+vita2d_texture *vita2d_load_JPEG_ARM_file(char *filename, int io_type, int useDownScale, int downScalerHeight, int downScalerWidth);
+vita2d_texture *vita2d_load_JPEG_ARM_buffer(const void *buffer, unsigned long buffer_size, int useDownScale, int downScalerHeight, int downScalerWidth);
+int vita2d_JPEG_ARM_decoder_initialize(void);
+int vita2d_JPEG_ARM_decoder_finish(void);
+
 vita2d_texture *vita2d_load_BMP_file(char *filename, int io_type);
 vita2d_texture *vita2d_load_BMP_buffer(const void *buffer);
 
 vita2d_texture *vita2d_load_GXT_file(char *filename, int texture_index, int io_type);
 vita2d_texture *vita2d_load_additional_GXT(vita2d_texture *initial_tex, int texture_index);
+void vita2d_free_additional_GXT(vita2d_texture *tex);
 
 vita2d_font *vita2d_load_font_file(const char *filename);
 vita2d_font *vita2d_load_font_mem(const void *buffer, unsigned int size);
