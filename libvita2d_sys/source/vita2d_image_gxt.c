@@ -139,3 +139,8 @@ exit_error_free:
 exit_error:
 	return NULL;
 }
+
+void vita2d_free_additional_GXT(vita2d_texture *tex)
+{
+	sceClibMspaceFree(mspace_internal, tex);
+}

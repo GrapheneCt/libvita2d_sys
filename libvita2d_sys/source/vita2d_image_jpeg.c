@@ -1,7 +1,8 @@
 #include <arm_neon.h>
 #include <psp2/io/fcntl.h>
+#include <psp2/sysmodule.h>
 #include <psp2/gxm.h>
-#include <psp2/jpeg.h>
+#include <psp2/jpegarm.h>
 #include "vita2d_sys.h"
 #include <psp2/kernel/clib.h> 
 #include <psp2/io/stat.h>
@@ -27,6 +28,8 @@
 #define CSC_FIX(x)	((int)(x * 1024 + 0.5))
 
 extern void* mspace_internal;
+
+static int decoder_initialized = 0, decoder_arm_initialized = 0;
 
 typedef struct {
 	SceUID		bufferMemBlock;
@@ -412,19 +415,30 @@ int readFileFIOS2(char *fileName, unsigned char *pBuffer, SceSize bufSize)
 
 int vita2d_JPEG_decoder_initialize(void)
 {
-	SceJpegMJpegInitParam initParam;
+	if (!decoder_initialized) {
+		SceJpegMJpegInitParam initParam;
 
-	/*E Initialize JPEG decoder. */
-	initParam.size = sizeof(SceJpegMJpegInitParam);
-	initParam.maxSplitDecoder = 0;
-	initParam.option = SCE_JPEG_MJPEG_INIT_OPTION_LPDDR2_MEMORY;
+		/*E Initialize JPEG decoder. */
+		initParam.size = sizeof(SceJpegMJpegInitParam);
+		initParam.maxSplitDecoder = 0;
+		initParam.option = SCE_JPEG_MJPEG_INIT_OPTION_LPDDR2_MEMORY;
 
-	return sceJpegInitMJpegWithParam(&initParam);
+		decoder_initialized = 1;
+
+		return sceJpegInitMJpegWithParam(&initParam);
+	}
+	else
+		return 0;
 }
 
 int vita2d_JPEG_decoder_finish(void)
 {
-	return sceJpegFinishMJpeg();
+	if (decoder_initialized) {
+		decoder_initialized = 0;
+		return sceJpegFinishMJpeg();
+	}
+	else 
+		return 0;
 }
 
 vita2d_texture *vita2d_load_JPEG_file(char *filename, int io_type, int useMainMemory, int useDownScale, int downScalerHeight, int downScalerWidth)
@@ -465,6 +479,9 @@ vita2d_texture *vita2d_load_JPEG_file(char *filename, int io_type, int useMainMe
 	SceUID streamBufMemblock = sceKernelAllocMemBlock("jpegdecStreamBuffer",
 		memBlockType, decCtrl.streamBufSize, NULL);
 
+	if (streamBufMemblock < 0)
+		return NULL;
+
 	sceKernelGetMemBlockBase(streamBufMemblock, (void **)&pJpeg);
 
 	/*E Read JPEG file to buffer. */
@@ -485,11 +502,17 @@ vita2d_texture *vita2d_load_JPEG_file(char *filename, int io_type, int useMainMe
 			SCE_JPEG_NO_CSC_OUTPUT, decodeMode, &outputInfo);
 	}
 
+	if (ret < 0)
+		goto error_free_file_hw_in_buf;
+
 	/*E Allocate decoder memory. */
 	totalBufSize = ROUND_UP(outputInfo.outputBufferSize + outputInfo.coefBufferSize, memBlockAlign);
 
 	decCtrl.bufferMemBlock = sceKernelAllocMemBlock("jpegdecMainBuffer",
 		memBlockType, totalBufSize, NULL);
+
+	if (decCtrl.bufferMemBlock < 0)
+		goto error_free_file_hw_in_buf;
 
 	sceKernelGetMemBlockBase(decCtrl.bufferMemBlock, (void **)&pYCbCr);
 
@@ -547,6 +570,9 @@ vita2d_texture *vita2d_load_JPEG_file(char *filename, int io_type, int useMainMe
 		sceKernelFreeMemBlock(streamBufMemblock);
 	}
 
+	if (ret < 0)
+		goto error_free_file_hw_both_buf;
+
 	FrameInfo pFrameInfo;
 
 	pFrameInfo.pitchWidth = ret >> 16;
@@ -555,18 +581,21 @@ vita2d_texture *vita2d_load_JPEG_file(char *filename, int io_type, int useMainMe
 	pFrameInfo.validHeight = validHeight;
 
 	if (pFrameInfo.pitchWidth > GXM_TEX_MAX_SIZE || pFrameInfo.pitchHeight > GXM_TEX_MAX_SIZE)
-		return NULL;
+		goto error_free_file_hw_both_buf;
 
 	unsigned int size = ROUND_UP(4 * 1024 * pFrameInfo.pitchHeight, memBlockAlign);
 
 	SceUID tex_data_uid = sceKernelAllocMemBlock("gpu_mem", memBlockType, size, NULL);
 
+	if (tex_data_uid < 0)
+		goto error_free_file_hw_both_buf;
+
 	void* texture_data;
-	if (sceKernelGetMemBlockBase(tex_data_uid, &texture_data) < 0)
-		return NULL;
+
+	sceKernelGetMemBlockBase(tex_data_uid, &texture_data);
 
 	if (sceGxmMapMemory(texture_data, size, SCE_GXM_MEMORY_ATTRIB_READ | SCE_GXM_MEMORY_ATTRIB_WRITE) < 0)
-		return NULL;
+		goto error_free_file_hw_all_buf;
 
 	/* Clear the texture */
 	sceClibMemset(texture_data, 0, size);
@@ -594,9 +623,12 @@ vita2d_texture *vita2d_load_JPEG_file(char *filename, int io_type, int useMainMe
 			SCE_JPEG_PIXEL_RGBA8888, outputInfo.colorSpace & 0xFFFF);
 	}
 
+	if (ret < 0)
+		goto error_free_file_hw_all_buf;
+
 	vita2d_texture *texture = sceClibMspaceMalloc(mspace_internal, sizeof(*texture));
 	if (!texture)
-		return NULL;
+		goto error_free_file_hw_all_buf;
 
 	texture->data_UID = tex_data_uid;
 
@@ -616,6 +648,27 @@ vita2d_texture *vita2d_load_JPEG_file(char *filename, int io_type, int useMainMe
 	}
 
 	return texture;
+
+error_free_file_hw_all_buf:
+
+	if (tex_data_uid >= 0) {
+		sceKernelFreeMemBlock(tex_data_uid);
+	}
+
+error_free_file_hw_both_buf:
+
+	if (decCtrl.bufferMemBlock >= 0) {
+		sceKernelFreeMemBlock(decCtrl.bufferMemBlock);
+	}
+
+error_free_file_hw_in_buf:
+
+	/*E Free file buffer */
+	if (streamBufMemblock >= 0) {
+		sceKernelFreeMemBlock(streamBufMemblock);
+	}
+
+	return NULL;
 }
 
 vita2d_texture *vita2d_load_JPEG_buffer(const void *buffer, unsigned long buffer_size, int useMainMemory, int useDownScale, int downScalerHeight, int downScalerWidth)
@@ -650,6 +703,9 @@ vita2d_texture *vita2d_load_JPEG_buffer(const void *buffer, unsigned long buffer
 	SceUID streamBufMemblock = sceKernelAllocMemBlock("jpegdecStreamBuffer",
 		memBlockType, decCtrl.streamBufSize, NULL);
 
+	if (streamBufMemblock < 0)
+		return NULL;
+
 	sceKernelGetMemBlockBase(streamBufMemblock, (void **)&pJpeg);
 
 	/*E Read JPEG buffer to buffer. */
@@ -667,11 +723,17 @@ vita2d_texture *vita2d_load_JPEG_buffer(const void *buffer, unsigned long buffer
 			SCE_JPEG_NO_CSC_OUTPUT, decodeMode, &outputInfo);
 	}
 
+	if (ret < 0)
+		goto error_free_buf_hw_in_buf;
+
 	/*E Allocate decoder memory. */
 	totalBufSize = ROUND_UP(outputInfo.outputBufferSize + outputInfo.coefBufferSize, memBlockAlign);
 
 	decCtrl.bufferMemBlock = sceKernelAllocMemBlock("jpegdecMainBuffer",
 		memBlockType, totalBufSize, NULL);
+
+	if (decCtrl.bufferMemBlock < 0)
+		goto error_free_buf_hw_in_buf;
 
 	sceKernelGetMemBlockBase(decCtrl.bufferMemBlock, (void **)&pYCbCr);
 
@@ -684,8 +746,8 @@ vita2d_texture *vita2d_load_JPEG_buffer(const void *buffer, unsigned long buffer
 		float downScaleWidth, downScaleHeight, downScale;
 		int downScaleDiv;
 
-		downScaleWidth = (float)outputInfo.pitch[0].x / VDISP_FRAME_WIDTH;
-		downScaleHeight = (float)outputInfo.pitch[0].y / VDISP_FRAME_HEIGHT;
+		downScaleWidth = (float)outputInfo.pitch[0].x / downScalerWidth;
+		downScaleHeight = (float)outputInfo.pitch[0].y / downScalerHeight;
 		downScale = (downScaleWidth >= downScaleHeight) ? downScaleWidth : downScaleHeight;
 		if (downScale <= 1.f) {
 			/*E Downscale is not needed. */
@@ -729,6 +791,9 @@ vita2d_texture *vita2d_load_JPEG_buffer(const void *buffer, unsigned long buffer
 		sceKernelFreeMemBlock(streamBufMemblock);
 	}
 
+	if (ret < 0)
+		goto error_free_buf_hw_both_buf;
+
 	FrameInfo pFrameInfo;
 
 	pFrameInfo.pitchWidth = ret >> 16;
@@ -737,18 +802,21 @@ vita2d_texture *vita2d_load_JPEG_buffer(const void *buffer, unsigned long buffer
 	pFrameInfo.validHeight = validHeight;
 
 	if (pFrameInfo.pitchWidth > GXM_TEX_MAX_SIZE || pFrameInfo.pitchHeight > GXM_TEX_MAX_SIZE)
-		return NULL;
+		goto error_free_buf_hw_both_buf;
 
 	unsigned int size = ROUND_UP(4 * 1024 * pFrameInfo.pitchHeight, memBlockAlign);
 
 	SceUID tex_data_uid = sceKernelAllocMemBlock("gpu_mem", memBlockType, size, NULL);
 
+	if (tex_data_uid < 0)
+		goto error_free_buf_hw_both_buf;
+
 	void* texture_data;
-	if (sceKernelGetMemBlockBase(tex_data_uid, &texture_data) < 0)
-		return NULL;
+
+	sceKernelGetMemBlockBase(tex_data_uid, &texture_data);
 
 	if (sceGxmMapMemory(texture_data, size, SCE_GXM_MEMORY_ATTRIB_READ | SCE_GXM_MEMORY_ATTRIB_WRITE) < 0)
-		return NULL;
+		goto error_free_buf_hw_all_buf;
 
 	/* Clear the texture */
 	sceClibMemset(texture_data, 0, size);
@@ -776,9 +844,12 @@ vita2d_texture *vita2d_load_JPEG_buffer(const void *buffer, unsigned long buffer
 			SCE_JPEG_PIXEL_RGBA8888, outputInfo.colorSpace & 0xFFFF);
 	}
 
+	if (ret < 0)
+		goto error_free_buf_hw_all_buf;
+
 	vita2d_texture *texture = sceClibMspaceMalloc(mspace_internal, sizeof(*texture));
 	if (!texture)
-		return NULL;
+		goto error_free_buf_hw_all_buf;
 
 	texture->data_UID = tex_data_uid;
 
@@ -798,4 +869,361 @@ vita2d_texture *vita2d_load_JPEG_buffer(const void *buffer, unsigned long buffer
 	}
 
 	return texture;
+
+error_free_buf_hw_all_buf:
+
+	if (tex_data_uid >= 0) {
+		sceKernelFreeMemBlock(tex_data_uid);
+	}
+
+error_free_buf_hw_both_buf:
+
+	if (decCtrl.bufferMemBlock >= 0) {
+		sceKernelFreeMemBlock(decCtrl.bufferMemBlock);
+	}
+
+error_free_buf_hw_in_buf:
+
+	/*E Free file buffer */
+	if (streamBufMemblock >= 0) {
+		sceKernelFreeMemBlock(streamBufMemblock);
+	}
+
+	return NULL;
+}
+
+int vita2d_JPEG_ARM_decoder_initialize(void)
+{
+	if (!decoder_arm_initialized) {
+		decoder_arm_initialized = 1;
+		return sceSysmoduleLoadModuleInternal(SCE_SYSMODULE_INTERNAL_JPEG_ARM);
+	}
+	else 
+		return 0;
+}
+
+int vita2d_JPEG_ARM_decoder_finish(void)
+{
+	if (decoder_arm_initialized) {
+		decoder_arm_initialized = 0;
+		return sceSysmoduleUnloadModuleInternal(SCE_SYSMODULE_INTERNAL_JPEG_ARM);
+	}
+	else
+		return 0;
+}
+
+vita2d_texture *vita2d_load_JPEG_ARM_file(char *filename, int io_type, int useDownScale, int downScalerHeight, int downScalerWidth)
+{
+	int ret;
+	JpegDecCtrl	decCtrl;
+	SceSize totalBufSize;
+	SceJpegOutputInfo outputInfo;
+	unsigned char *pJpeg;
+	SceSize isize;
+	unsigned char *texture_data;
+	void *pCoefBuffer;
+	int decodeMode = SCE_JPEG_MJPEG_WITH_DHT;
+	int validWidth, validHeight;
+
+	/*E Allocate stream buffer. */
+	if (io_type) {
+		SceFiosStat fios_stat;
+		sceClibMemset(&fios_stat, 0, sizeof(SceFiosStat));
+		sceFiosStatSync(NULL, filename, &fios_stat);
+		isize = (SceSize)fios_stat.fileSize;
+	}
+	else {
+		SceIoStat stat;
+		sceIoGetstat(filename, &stat);
+		isize = (SceSize)stat.st_size;
+	}
+
+	decCtrl.streamBufSize = ROUND_UP(isize, 4 * 1024);
+
+	SceUID streamBufMemblock = sceKernelAllocMemBlock("jpegdecStreamBuffer",
+		SCE_KERNEL_MEMBLOCK_TYPE_USER_RW, decCtrl.streamBufSize, NULL);
+
+	if (streamBufMemblock < 0)
+		return NULL;
+
+	sceKernelGetMemBlockBase(streamBufMemblock, (void **)&pJpeg);
+
+	/*E Read JPEG file to buffer. */
+	if (io_type)
+		readFileFIOS2(filename, pJpeg, isize);
+	else
+		readFile(filename, pJpeg, isize);
+
+	/*E Get JPEG output information. */
+	ret = sceJpegArmGetOutputInfo(pJpeg, isize,
+		SCE_JPEG_PIXEL_RGBA8888, decodeMode, &outputInfo);
+	if (ret == SCE_JPEG_ARM_ERROR_UNSUPPORT_SAMPLING &&
+		outputInfo.colorSpace == (SCE_JPEG_CS_YCBCR | SCE_JPEG_CS_H1V1)) {
+		/* Set SCE_JPEG_MJPEG_ANY_SAMPLING for decodeMode and retry sceJpegGetOutputInfo(),
+		   if the JPEG's color space is YCbCr 4:4:4.*/
+		decodeMode = SCE_JPEG_MJPEG_ANY_SAMPLING;
+		ret = sceJpegArmGetOutputInfo(pJpeg, isize,
+			SCE_JPEG_PIXEL_RGBA8888, decodeMode, &outputInfo);
+	}
+
+	if (ret < 0)
+		goto error_free_file_in_buf;
+
+	/*E Allocate decoder memory. */
+	totalBufSize = ROUND_UP(outputInfo.outputBufferSize + outputInfo.coefBufferSize, 4 * 1024);
+
+	decCtrl.bufferMemBlock = sceKernelAllocMemBlock("jpegdecMainBuffer",
+		SCE_KERNEL_MEMBLOCK_TYPE_USER_RW_UNCACHE, totalBufSize, NULL);
+
+	if (decCtrl.bufferMemBlock < 0)
+		goto error_free_file_in_buf;
+
+	sceKernelGetMemBlockBase(decCtrl.bufferMemBlock, (void **)&texture_data);
+
+	if (sceGxmMapMemory((void*)texture_data, outputInfo.outputBufferSize, SCE_GXM_MEMORY_ATTRIB_READ | SCE_GXM_MEMORY_ATTRIB_WRITE) < 0)
+		goto error_free_file_both_buf;
+
+	decCtrl.decodeBufSize = outputInfo.outputBufferSize;
+	decCtrl.coefBufSize = outputInfo.coefBufferSize;
+
+	/*E Calculate downscale ratio. */
+	if (useDownScale)
+	{
+		float downScaleWidth, downScaleHeight, downScale;
+		int downScaleDiv;
+
+		downScaleWidth = (float)outputInfo.pitch[0].x / downScalerWidth / 4;
+		downScaleHeight = (float)outputInfo.pitch[0].y / downScalerHeight;
+		downScale = (downScaleWidth >= downScaleHeight) ? downScaleWidth : downScaleHeight;
+		if (downScale <= 1.f) {
+			/*E Downscale is not needed. */
+		}
+		else if (downScale <= 2.f) {
+			decodeMode |= SCE_JPEG_MJPEG_DOWNSCALE_1_2;
+		}
+		else if (downScale <= 4.f) {
+			decodeMode |= SCE_JPEG_MJPEG_DOWNSCALE_1_4;
+		}
+		else if (downScale <= 8.f) {
+			decodeMode |= SCE_JPEG_MJPEG_DOWNSCALE_1_8;
+		}
+		downScaleDiv = (decodeMode >> 3) & 0xe;
+		if (downScaleDiv) {
+			validWidth = (outputInfo.imageWidth + downScaleDiv - 1) / downScaleDiv;
+			validHeight = (outputInfo.imageHeight + downScaleDiv - 1) / downScaleDiv;
+		}
+		else {
+			validWidth = outputInfo.imageWidth;
+			validHeight = outputInfo.imageHeight;
+		}
+	}
+
+	/*E Set output buffer and quantized coefficients buffer. */
+	if (outputInfo.coefBufferSize > 0 && decCtrl.coefBufSize > 0) {
+		pCoefBuffer = (void*)(texture_data + decCtrl.decodeBufSize);
+	}
+	else {
+		pCoefBuffer = NULL;
+	}
+
+	/*E Decode JPEG stream */
+	ret = sceJpegArmDecodeMJpeg(
+		pJpeg, isize,
+		texture_data, decCtrl.decodeBufSize, decodeMode,
+		pCoefBuffer, decCtrl.coefBufSize);
+
+	if (ret < 0)
+		goto error_free_file_both_buf;
+
+	FrameInfo pFrameInfo;
+
+	pFrameInfo.pitchWidth = ret >> 16;
+	pFrameInfo.pitchHeight = ret & 0xFFFF;
+	pFrameInfo.validWidth = validWidth;
+	pFrameInfo.validHeight = validHeight;
+
+	if (pFrameInfo.pitchWidth > GXM_TEX_MAX_SIZE || pFrameInfo.pitchHeight > GXM_TEX_MAX_SIZE)
+		goto error_free_file_both_buf;
+
+	/*E Free file buffer */
+	if (streamBufMemblock >= 0) {
+		sceKernelFreeMemBlock(streamBufMemblock);
+	}
+
+	vita2d_texture *texture = sceClibMspaceMalloc(mspace_internal, sizeof(*texture));
+	if (!texture)
+		goto error_free_file_both_buf;
+
+	texture->data_UID = decCtrl.bufferMemBlock;
+
+	/* Create the gxm texture */
+	ret = sceGxmTextureInitLinear(
+		&texture->gxm_tex,
+		(void*)texture_data,
+		SCE_GXM_TEXTURE_FORMAT_U8U8U8U8_ABGR,
+		pFrameInfo.pitchWidth,
+		pFrameInfo.pitchHeight,
+		0);
+
+	texture->palette_UID = 0;
+
+	return texture;
+
+error_free_file_both_buf:
+
+	/*E Free decoder buffer */
+	if (decCtrl.bufferMemBlock >= 0) {
+		sceKernelFreeMemBlock(decCtrl.bufferMemBlock);
+	}
+
+error_free_file_in_buf:
+
+	/*E Free file buffer */
+	if (streamBufMemblock >= 0) {
+		sceKernelFreeMemBlock(streamBufMemblock);
+	}
+
+	return NULL;
+}
+
+vita2d_texture *vita2d_load_JPEG_ARM_buffer(const void *buffer, unsigned long buffer_size, int useDownScale, int downScalerHeight, int downScalerWidth)
+{
+	int ret;
+	JpegDecCtrl	decCtrl;
+	SceSize totalBufSize;
+	SceJpegOutputInfo outputInfo;
+	unsigned char *pJpeg;
+	SceSize isize;
+	unsigned char *texture_data;
+	void *pCoefBuffer;
+	int decodeMode = SCE_JPEG_MJPEG_WITH_DHT;
+	int validWidth, validHeight;
+
+	unsigned int magic = *(unsigned int *)buffer;
+	if (magic != 0xE0FFD8FF && magic != 0xE1FFD8FF)
+		return NULL;
+
+	isize = buffer_size;
+	pJpeg = (unsigned char *)buffer;
+
+	/*E Get JPEG output information. */
+	ret = sceJpegArmGetOutputInfo(pJpeg, isize,
+		SCE_JPEG_PIXEL_RGBA8888, decodeMode, &outputInfo);
+	if (ret == SCE_JPEG_ARM_ERROR_UNSUPPORT_SAMPLING &&
+		outputInfo.colorSpace == (SCE_JPEG_CS_YCBCR | SCE_JPEG_CS_H1V1)) {
+		/* Set SCE_JPEG_MJPEG_ANY_SAMPLING for decodeMode and retry sceJpegGetOutputInfo(),
+		   if the JPEG's color space is YCbCr 4:4:4.*/
+		decodeMode = SCE_JPEG_MJPEG_ANY_SAMPLING;
+		ret = sceJpegArmGetOutputInfo(pJpeg, isize,
+			SCE_JPEG_PIXEL_RGBA8888, decodeMode, &outputInfo);
+	}
+
+	if (ret < 0)
+		return NULL;
+
+	/*E Allocate decoder memory. */
+	totalBufSize = ROUND_UP(outputInfo.outputBufferSize + outputInfo.coefBufferSize, 4 * 1024);
+
+	decCtrl.bufferMemBlock = sceKernelAllocMemBlock("jpegdecMainBuffer",
+		SCE_KERNEL_MEMBLOCK_TYPE_USER_RW_UNCACHE, totalBufSize, NULL);
+
+	if (decCtrl.bufferMemBlock < 0)
+		return NULL;
+
+	sceKernelGetMemBlockBase(decCtrl.bufferMemBlock, (void **)&texture_data);
+
+	ret = sceGxmMapMemory((void*)texture_data, outputInfo.outputBufferSize, SCE_GXM_MEMORY_ATTRIB_READ | SCE_GXM_MEMORY_ATTRIB_WRITE);
+
+	if (ret < 0)
+		goto error_free_buf_dec_buf;
+
+	decCtrl.decodeBufSize = outputInfo.outputBufferSize;
+	decCtrl.coefBufSize = outputInfo.coefBufferSize;
+
+	/*E Calculate downscale ratio. */
+	if (useDownScale)
+	{
+		float downScaleWidth, downScaleHeight, downScale;
+		int downScaleDiv;
+
+		downScaleWidth = (float)outputInfo.pitch[0].x / downScalerWidth / 4;
+		downScaleHeight = (float)outputInfo.pitch[0].y / downScalerHeight;
+		downScale = (downScaleWidth >= downScaleHeight) ? downScaleWidth : downScaleHeight;
+		if (downScale <= 1.f) {
+			/*E Downscale is not needed. */
+		}
+		else if (downScale <= 2.f) {
+			decodeMode |= SCE_JPEG_MJPEG_DOWNSCALE_1_2;
+		}
+		else if (downScale <= 4.f) {
+			decodeMode |= SCE_JPEG_MJPEG_DOWNSCALE_1_4;
+		}
+		else if (downScale <= 8.f) {
+			decodeMode |= SCE_JPEG_MJPEG_DOWNSCALE_1_8;
+		}
+		downScaleDiv = (decodeMode >> 3) & 0xe;
+		if (downScaleDiv) {
+			validWidth = (outputInfo.imageWidth + downScaleDiv - 1) / downScaleDiv;
+			validHeight = (outputInfo.imageHeight + downScaleDiv - 1) / downScaleDiv;
+		}
+		else {
+			validWidth = outputInfo.imageWidth;
+			validHeight = outputInfo.imageHeight;
+		}
+	}
+
+	/*E Set output buffer and quantized coefficients buffer. */
+	if (outputInfo.coefBufferSize > 0 && decCtrl.coefBufSize > 0) {
+		pCoefBuffer = (void*)(texture_data + decCtrl.decodeBufSize);
+	}
+	else {
+		pCoefBuffer = NULL;
+	}
+
+	/*E Decode JPEG stream */
+	ret = sceJpegArmDecodeMJpeg(
+		pJpeg, isize,
+		texture_data, decCtrl.decodeBufSize, decodeMode,
+		pCoefBuffer, decCtrl.coefBufSize);
+
+	if (ret < 0)
+		goto error_free_buf_dec_buf;
+
+	FrameInfo pFrameInfo;
+
+	pFrameInfo.pitchWidth = ret >> 16;
+	pFrameInfo.pitchHeight = ret & 0xFFFF;
+	pFrameInfo.validWidth = validWidth;
+	pFrameInfo.validHeight = validHeight;
+
+	if (pFrameInfo.pitchWidth > GXM_TEX_MAX_SIZE || pFrameInfo.pitchHeight > GXM_TEX_MAX_SIZE)
+		goto error_free_buf_dec_buf;
+
+	vita2d_texture *texture = sceClibMspaceMalloc(mspace_internal, sizeof(*texture));
+	if (!texture)
+		goto error_free_buf_dec_buf;
+
+	texture->data_UID = decCtrl.bufferMemBlock;
+
+	/* Create the gxm texture */
+	ret = sceGxmTextureInitLinear(
+		&texture->gxm_tex,
+		(void*)texture_data,
+		SCE_GXM_TEXTURE_FORMAT_U8U8U8U8_ABGR,
+		pFrameInfo.pitchWidth,
+		pFrameInfo.pitchHeight,
+		0);
+
+	texture->palette_UID = 0;
+
+	return texture;
+
+error_free_buf_dec_buf:
+
+	/*E Free decoder buffer */
+	if (decCtrl.bufferMemBlock >= 0) {
+		sceKernelFreeMemBlock(decCtrl.bufferMemBlock);
+	}
+
+	return NULL;
 }

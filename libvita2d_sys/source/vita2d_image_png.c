@@ -44,8 +44,6 @@ static vita2d_texture *_vita2d_load_PNG_generic(const void *io_ptr, png_rw_ptr r
 
 	if (setjmp(png_jmpbuf(png_ptr))) {
 		png_destroy_read_struct(&png_ptr, &info_ptr, (png_infopp)0);
-		if (row_ptrs != NULL)
-			sceClibMspaceFree(mspace_internal, row_ptrs);
 		return NULL;
 	}
 
