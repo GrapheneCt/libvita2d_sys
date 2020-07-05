@@ -980,7 +980,11 @@ vita2d_texture *vita2d_load_JPEG_ARM_file(char *filename, int io_type, int useDo
 
 	sceKernelGetMemBlockBase(decCtrl.bufferMemBlock, (void **)&texture_data);
 
-	if (sceGxmMapMemory((void*)texture_data, outputInfo.outputBufferSize, SCE_GXM_MEMORY_ATTRIB_READ | SCE_GXM_MEMORY_ATTRIB_WRITE) < 0)
+	unsigned int gxmMemSize = ROUND_UP(outputInfo.outputBufferSize, 4 * 1024);
+
+	ret = sceGxmMapMemory((void*)texture_data, gxmMemSize, SCE_GXM_MEMORY_ATTRIB_READ | SCE_GXM_MEMORY_ATTRIB_WRITE);
+
+	if (ret < 0)
 		goto error_free_file_both_buf;
 
 	decCtrl.decodeBufSize = outputInfo.outputBufferSize;
@@ -1132,7 +1136,9 @@ vita2d_texture *vita2d_load_JPEG_ARM_buffer(const void *buffer, unsigned long bu
 
 	sceKernelGetMemBlockBase(decCtrl.bufferMemBlock, (void **)&texture_data);
 
-	ret = sceGxmMapMemory((void*)texture_data, outputInfo.outputBufferSize, SCE_GXM_MEMORY_ATTRIB_READ | SCE_GXM_MEMORY_ATTRIB_WRITE);
+	unsigned int gxmMemSize = ROUND_UP(outputInfo.outputBufferSize, 4 * 1024);
+
+	ret = sceGxmMapMemory((void*)texture_data, gxmMemSize, SCE_GXM_MEMORY_ATTRIB_READ | SCE_GXM_MEMORY_ATTRIB_WRITE);
 
 	if (ret < 0)
 		goto error_free_buf_dec_buf;
