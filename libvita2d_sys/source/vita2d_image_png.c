@@ -1,6 +1,7 @@
 #include <psp2/io/fcntl.h>
 #include <psp2/kernel/clib.h>
 #include <psp2/gxm.h>
+#include <psp2/libdbg.h>
 #include <png.h>
 #include "vita2d_sys.h"
 #include "fios2ac.h"
@@ -32,17 +33,20 @@ static vita2d_texture *_vita2d_load_PNG_generic(const void *io_ptr, png_rw_ptr r
 {
 	png_structp png_ptr = png_create_read_struct(PNG_LIBPNG_VER_STRING, NULL, NULL, NULL);
 	if (png_ptr == NULL) {
+		SCE_DBG_LOG_ERROR("[PNG] png_create_read_struct() returned NULL");
 		goto error_create_read;
 	}
 
 	png_infop info_ptr = png_create_info_struct(png_ptr);
 	if (info_ptr == NULL) {
+		SCE_DBG_LOG_ERROR("[PNG] png_create_info_struct() returned NULL");
 		goto error_create_info;
 	}
 
 	png_bytep *row_ptrs = NULL;
 
 	if (setjmp(png_jmpbuf(png_ptr))) {
+		SCE_DBG_LOG_ERROR("[PNG] Invalid png data");
 		png_destroy_read_struct(&png_ptr, &info_ptr, (png_infopp)0);
 		return NULL;
 	}
@@ -91,12 +95,16 @@ static vita2d_texture *_vita2d_load_PNG_generic(const void *io_ptr, png_rw_ptr r
 	png_read_update_info(png_ptr, info_ptr);
 
 	row_ptrs = (png_bytep *)sceClibMspaceMalloc(mspace_internal, sizeof(png_bytep) * height);
-	if (!row_ptrs)
+	if (!row_ptrs) {
+		SCE_DBG_LOG_ERROR("[PNG] sceClibMspaceMalloc() returned NULL");
 		goto error_alloc_rows;
+	}
 
 	vita2d_texture *texture = vita2d_create_empty_texture(width, height);
-	if (!texture)
+	if (!texture) {
+		SCE_DBG_LOG_ERROR("[PNG] vita2d_create_empty_texture() returned NULL");
 		goto error_create_tex;
+	}
 
 	void *texture_data = vita2d_texture_get_datap(texture);
 	unsigned int stride = vita2d_texture_get_stride(texture);
@@ -125,18 +133,24 @@ error_create_read:
 
 vita2d_texture *vita2d_load_PNG_file_FIOS2(char *mountedFilePath)
 {
+	int ret;
 	png_byte pngsig[PNG_SIGSIZE];
 	SceFiosFH fd;
 
-	if (sceFiosFHOpenSync(NULL, &fd, mountedFilePath, NULL) < 0) {
+	ret = sceFiosFHOpenSync(NULL, &fd, mountedFilePath, NULL);
+
+	if (ret < 0) {
+		SCE_DBG_LOG_ERROR("[PNG] Can't open file %s sceFiosFHOpenSync(): 0x%X", mountedFilePath, ret);
 		goto exit_error;
 	}
 
 	if (sceFiosFHReadSync(NULL, fd, pngsig, PNG_SIGSIZE) != PNG_SIGSIZE) {
+		SCE_DBG_LOG_ERROR("[PNG] Can't read png magic");
 		goto exit_close;
 	}
 
 	if (png_sig_cmp(pngsig, 0, PNG_SIGSIZE) != 0) {
+		SCE_DBG_LOG_ERROR("[PNG] Invalid png magic");
 		goto exit_close;
 	}
 
@@ -156,17 +170,21 @@ vita2d_texture *vita2d_load_PNG_file(char *filename, int io_type)
 		return vita2d_load_PNG_file_FIOS2(filename);
 
 	png_byte pngsig[PNG_SIGSIZE];
-	SceUID fd;
 
-	if ((fd = sceIoOpen(filename, SCE_O_RDONLY, 0777)) < 0) {
+	SceUID fd = sceIoOpen(filename, SCE_O_RDONLY, 0777);
+
+	if (fd < 0) {
+		SCE_DBG_LOG_ERROR("[PNG] Can't open file %s sceIoOpen(): 0x%X", filename, fd);
 		goto exit_error;
 	}
 
 	if (sceIoRead(fd, pngsig, PNG_SIGSIZE) != PNG_SIGSIZE) {
+		SCE_DBG_LOG_ERROR("[PNG] Can't read png magic");
 		goto exit_close;
 	}
 
 	if (png_sig_cmp(pngsig, 0, PNG_SIGSIZE) != 0) {
+		SCE_DBG_LOG_ERROR("[PNG] Invalid png magic");
 		goto exit_close;
 	}
 
@@ -183,6 +201,7 @@ exit_error:
 vita2d_texture *vita2d_load_PNG_buffer(const void *buffer)
 {
 	if (png_sig_cmp((png_byte *) buffer, 0, PNG_SIGSIZE) != 0) {
+		SCE_DBG_LOG_ERROR("[PNG] Invalid png magic");
 		return NULL;
 	}
 

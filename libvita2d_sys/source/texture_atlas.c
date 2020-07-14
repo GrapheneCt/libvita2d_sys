@@ -1,13 +1,16 @@
-#include "texture_atlas.h"
 #include <psp2/kernel/clib.h>
+#include <psp2/libdbg.h>
+#include "texture_atlas.h"
 
 extern void* mspace_internal;
 
 texture_atlas *texture_atlas_create(int width, int height, SceGxmTextureFormat format)
 {
 	texture_atlas *atlas = sceClibMspaceMalloc(mspace_internal, sizeof(*atlas));
-	if (!atlas)
+	if (!atlas) {
+		SCE_DBG_LOG_ERROR("[ATLAS] sceClibMspaceMalloc() returned NULL");
 		return NULL;
+	}
 
 	bp2d_rectangle rect;
 	rect.x = 0;
@@ -19,6 +22,7 @@ texture_atlas *texture_atlas_create(int width, int height, SceGxmTextureFormat f
 							    height,
 							    format);
 	if (!atlas->texture) {
+		SCE_DBG_LOG_ERROR("[ATLAS] vita2d_create_empty_texture_format() returned NULL");
 		sceClibMspaceFree(mspace_internal, atlas);
 		return NULL;
 	}

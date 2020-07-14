@@ -1,6 +1,7 @@
 #include <psp2/io/fcntl.h>
 #include <psp2/kernel/clib.h>
 #include <psp2/gxm.h>
+#include <psp2/libdbg.h>
 #include "vita2d_sys.h"
 
 #include "fios2ac.h"
@@ -45,14 +46,17 @@ static vita2d_texture *_vita2d_load_BMP_generic(
 	}
 
 	void *buffer = sceClibMspaceMalloc(mspace_internal, row_stride);
-	if (!buffer)
+	if (!buffer) {
+		SCE_DBG_LOG_ERROR("[BMP] sceClibMspaceMalloc() returned NULL");
 		return NULL;
+	}
 
 	vita2d_texture *texture = vita2d_create_empty_texture(
 		bmp_ih->biWidth,
 		bmp_ih->biHeight);
 
 	if (!texture) {
+		SCE_DBG_LOG_ERROR("[BMP] vita2d_create_empty_texture() returned NULL");
 		sceClibMspaceFree(mspace_internal, buffer);
 		return NULL;
 	}
@@ -134,13 +138,19 @@ static void _vita2d_read_bmp_buffer_read_fn(void *user_data, void *buffer, unsig
 vita2d_texture *vita2d_load_BMP_file_FIOS2(char* mountedFilePath)
 {
 	SceFiosFH fd;
-	if (sceFiosFHOpenSync(NULL, &fd, mountedFilePath, NULL) < 0) {
+	int ret;
+
+	ret = sceFiosFHOpenSync(NULL, &fd, mountedFilePath, NULL);
+
+	if (ret < 0) {
+		SCE_DBG_LOG_ERROR("[BMP] Can't open file %s sceFiosFHOpenSync(): 0x%X", mountedFilePath, ret);
 		goto exit_error;
 	}
 
 	BITMAPFILEHEADER bmp_fh;
 	sceFiosFHReadSync(NULL, fd, (void *)&bmp_fh, sizeof(BITMAPFILEHEADER));
 	if (bmp_fh.bfType != BMP_SIGNATURE) {
+		SCE_DBG_LOG_ERROR("[BMP] Invalid bmp magic");
 		goto exit_close;
 	}
 
@@ -168,14 +178,16 @@ vita2d_texture *vita2d_load_BMP_file(char *filename, int io_type)
 	if (io_type == 1)
 		return vita2d_load_BMP_file_FIOS2(filename);
 
-	SceUID fd;
-	if ((fd = sceIoOpen(filename, SCE_O_RDONLY, 0777)) < 0) {
+	SceUID fd = sceIoOpen(filename, SCE_O_RDONLY, 0777);
+	if (fd < 0) {
+		SCE_DBG_LOG_ERROR("[BMP] Can't open file %s sceIoOpen(): 0x%X", filename, fd);
 		goto exit_error;
 	}
 
 	BITMAPFILEHEADER bmp_fh;
 	sceIoRead(fd, (void *)&bmp_fh, sizeof(BITMAPFILEHEADER));
 	if (bmp_fh.bfType != BMP_SIGNATURE) {
+		SCE_DBG_LOG_ERROR("[BMP] Invalid bmp magic");
 		goto exit_close;
 	}
 
@@ -202,6 +214,7 @@ vita2d_texture *vita2d_load_BMP_buffer(const void *buffer)
 	BITMAPFILEHEADER bmp_fh;
 	sceClibMemcpy(&bmp_fh, buffer, sizeof(BITMAPFILEHEADER));
 	if (bmp_fh.bfType != BMP_SIGNATURE) {
+		SCE_DBG_LOG_ERROR("[BMP] Invalid bmp magic");
 		goto exit_error;
 	}
 

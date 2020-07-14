@@ -1,5 +1,6 @@
 #include <psp2/kernel/sysmem.h>
 #include <psp2/kernel/clib.h>
+#include <psp2/libdbg.h>
 #include <math.h>
 #include <freetype2/ft2build.h>
 #include FT_CACHE_H
@@ -65,11 +66,14 @@ vita2d_font *vita2d_load_font_file(const char *filename)
 	FT_Error error;
 
 	vita2d_font *font = sceClibMspaceMalloc(mspace_internal, sizeof(*font));
-	if (!font)
+	if (!font) {
+		SCE_DBG_LOG_ERROR("[FONT] sceClibMspaceMalloc() returned NULL");
 		return NULL;
+	}
 
 	error = FT_Init_FreeType(&font->ftlibrary);
 	if (error != FT_Err_Ok) {
+		SCE_DBG_LOG_ERROR("[PGF] FT_Init_FreeType(): 0x%X", error);
 		sceClibMspaceFree(mspace_internal, font);
 		return NULL;
 	}
@@ -84,6 +88,7 @@ vita2d_font *vita2d_load_font_file(const char *filename)
 		&font->ftcmanager);
 
 	if (error != FT_Err_Ok) {
+		SCE_DBG_LOG_ERROR("[PGF] FTC_Manager_New(): 0x%X", error);
 		FT_Done_FreeType(font->ftlibrary);
 		sceClibMspaceFree(mspace_internal, font);
 		return NULL;
@@ -107,11 +112,14 @@ vita2d_font *vita2d_load_font_mem(const void *buffer, unsigned int size)
 	FT_Error error;
 
 	vita2d_font *font = sceClibMspaceMalloc(mspace_internal, sizeof(*font));
-	if (!font)
+	if (!font) {
+		SCE_DBG_LOG_ERROR("[FONT] sceClibMspaceMalloc() returned NULL");
 		return NULL;
+	}
 
 	error = FT_Init_FreeType(&font->ftlibrary);
 	if (error != FT_Err_Ok) {
+		SCE_DBG_LOG_ERROR("[PGF] FT_Init_FreeType(): 0x%X", error);
 		sceClibMspaceFree(mspace_internal, font);
 		return NULL;
 	}
@@ -126,6 +134,7 @@ vita2d_font *vita2d_load_font_mem(const void *buffer, unsigned int size)
 		&font->ftcmanager);
 
 	if (error != FT_Err_Ok) {
+		SCE_DBG_LOG_ERROR("[PGF] FTC_Manager_New(): 0x%X", error);
 		FT_Done_FreeType(font->ftlibrary);
 		sceClibMspaceFree(mspace_internal, font);
 		return NULL;

@@ -1,13 +1,16 @@
-#include "bin_packing_2d.h"
 #include <psp2/kernel/clib.h>
+#include <psp2/libdbg.h>
+#include "bin_packing_2d.h"
 
 extern void* mspace_internal;
 
 bp2d_node *bp2d_create(const bp2d_rectangle *rect)
 {
 	bp2d_node *node = sceClibMspaceMalloc(mspace_internal, sizeof(*node));
-	if (!node)
+	if (!node) {
+		SCE_DBG_LOG_ERROR("[BP2D] sceClibMspaceMalloc() returned NULL");
 		return NULL;
+	}
 
 	node->left = NULL;
 	node->right = NULL;

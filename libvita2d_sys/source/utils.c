@@ -1,10 +1,12 @@
 #include <math.h>
 #include <psp2/kernel/clib.h>
+#include <psp2/libdbg.h>
 #include "utils.h"
 
 void *gpu_alloc(SceKernelMemBlockType type, unsigned int size, unsigned int alignment, unsigned int attribs, SceUID *uid)
 {
 	void *mem;
+	int ret;
 
 	if (type == SCE_KERNEL_MEMBLOCK_TYPE_USER_CDRAM_RW) {
 		size = ALIGN(size, 256*1024);
@@ -14,14 +16,24 @@ void *gpu_alloc(SceKernelMemBlockType type, unsigned int size, unsigned int alig
 
 	*uid = sceKernelAllocMemBlock("gpu_mem", type, size, NULL);
 
-	if (*uid < 0)
+	if (*uid < 0) {
+		SCE_DBG_LOG_ERROR("[UTILS] sceKernelAllocMemBlock(): 0x%X", *uid);
 		return NULL;
+	}
 
-	if (sceKernelGetMemBlockBase(*uid, &mem) < 0)
-		return NULL;
+	ret = sceKernelGetMemBlockBase(*uid, &mem);
 
-	if (sceGxmMapMemory(mem, size, attribs) < 0)
+	if (ret < 0) {
+		SCE_DBG_LOG_ERROR("[UTILS] sceKernelGetMemBlockBase(): 0x%X", ret);
 		return NULL;
+	}
+
+	ret = sceGxmMapMemory(mem, size, attribs);
+
+	if (ret < 0) {
+		SCE_DBG_LOG_ERROR("[UTILS] sceGxmMapMemory(): 0x%X", ret);
+		return NULL;
+	}
 
 	return mem;
 }
@@ -29,8 +41,15 @@ void *gpu_alloc(SceKernelMemBlockType type, unsigned int size, unsigned int alig
 void gpu_free(SceUID uid)
 {
 	void *mem = NULL;
-	if (sceKernelGetMemBlockBase(uid, &mem) < 0)
+	int ret;
+
+	ret = sceKernelGetMemBlockBase(uid, &mem);
+
+	if (ret < 0) {
+		SCE_DBG_LOG_ERROR("[UTILS] sceKernelGetMemBlockBase(): 0x%X", ret);
 		return;
+	}
+
 	sceGxmUnmapMemory(mem);
 	sceKernelFreeMemBlock(uid);
 }
@@ -38,14 +57,24 @@ void gpu_free(SceUID uid)
 void *vertex_usse_alloc(unsigned int size, SceUID *uid, uint32_t *usse_offset)
 {
 	void *mem = NULL;
+	int ret;
 
 	size = ALIGN(size, 4096);
 	*uid = sceKernelAllocMemBlock("vertex_usse", SCE_KERNEL_MEMBLOCK_TYPE_USER_RW_UNCACHE, size, NULL);
 
-	if (sceKernelGetMemBlockBase(*uid, &mem) < 0)
+	ret = sceKernelGetMemBlockBase(*uid, &mem);
+
+	if (ret < 0) {
+		SCE_DBG_LOG_ERROR("[UTILS] sceKernelGetMemBlockBase(): 0x%X", ret);
 		return NULL;
-	if (sceGxmMapVertexUsseMemory(mem, size, usse_offset) < 0)
+	}
+
+	ret = sceGxmMapVertexUsseMemory(mem, size, usse_offset);
+
+	if (ret < 0) {
+		SCE_DBG_LOG_ERROR("[UTILS] sceGxmMapVertexUsseMemory(): 0x%X", ret);
 		return NULL;
+	}
 
 	return mem;
 }
@@ -53,8 +82,14 @@ void *vertex_usse_alloc(unsigned int size, SceUID *uid, uint32_t *usse_offset)
 void vertex_usse_free(SceUID uid)
 {
 	void *mem = NULL;
-	if (sceKernelGetMemBlockBase(uid, &mem) < 0)
+	int ret;
+
+	ret = sceKernelGetMemBlockBase(uid, &mem);
+
+	if (sceKernelGetMemBlockBase(uid, &mem) < 0) {
+		SCE_DBG_LOG_ERROR("[UTILS] sceKernelGetMemBlockBase(): 0x%X", ret);
 		return;
+	}
 	sceGxmUnmapVertexUsseMemory(mem);
 	sceKernelFreeMemBlock(uid);
 }
@@ -62,14 +97,24 @@ void vertex_usse_free(SceUID uid)
 void *fragment_usse_alloc(unsigned int size, SceUID *uid, uint32_t *usse_offset)
 {
 	void *mem = NULL;
+	int ret;
 
 	size = ALIGN(size, 4096);
 	*uid = sceKernelAllocMemBlock("fragment_usse", SCE_KERNEL_MEMBLOCK_TYPE_USER_RW_UNCACHE, size, NULL);
 
-	if (sceKernelGetMemBlockBase(*uid, &mem) < 0)
+	ret = sceKernelGetMemBlockBase(*uid, &mem);
+
+	if (ret < 0) {
+		SCE_DBG_LOG_ERROR("[UTILS] sceKernelGetMemBlockBase(): 0x%X", ret);
 		return NULL;
-	if (sceGxmMapFragmentUsseMemory(mem, size, usse_offset) < 0)
+	}
+
+	ret = sceGxmMapFragmentUsseMemory(mem, size, usse_offset);
+
+	if (ret < 0) {
+		SCE_DBG_LOG_ERROR("[UTILS] sceGxmMapFragmentUsseMemory(): 0x%X", ret);
 		return NULL;
+	}
 
 	return mem;
 }
@@ -77,8 +122,14 @@ void *fragment_usse_alloc(unsigned int size, SceUID *uid, uint32_t *usse_offset)
 void fragment_usse_free(SceUID uid)
 {
 	void *mem = NULL;
-	if (sceKernelGetMemBlockBase(uid, &mem) < 0)
+	int ret;
+
+	ret = sceKernelGetMemBlockBase(uid, &mem);
+
+	if (ret < 0) {
+		SCE_DBG_LOG_ERROR("[UTILS] sceKernelGetMemBlockBase(): 0x%X", ret);
 		return;
+	}
 	sceGxmUnmapFragmentUsseMemory(mem);
 	sceKernelFreeMemBlock(uid);
 }

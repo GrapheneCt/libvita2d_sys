@@ -1,4 +1,5 @@
 #include <psp2/kernel/clib.h>
+#include <psp2/libdbg.h>
 #include "int_htab.h"
 
 extern void* mspace_internal;
@@ -17,8 +18,10 @@ static inline unsigned int FNV_1a(unsigned int key)
 int_htab *int_htab_create(size_t size)
 {
 	int_htab *htab = sceClibMspaceMalloc(mspace_internal, sizeof(*htab));
-	if (!htab)
+	if (!htab) {
+		SCE_DBG_LOG_ERROR("[HTAB] sceClibMspaceMalloc() returned NULL");
 		return NULL;
+	}
 
 	htab->size = size;
 	htab->used = 0;

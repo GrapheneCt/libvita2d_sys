@@ -3,6 +3,7 @@
 #include <psp2/kernel/clib.h>
 #include <psp2/kernel/threadmgr.h>
 #include <psp2/sysmodule.h>
+#include <psp2/libdbg.h>
 #include <math.h>
 #include "vita2d_sys.h"
 #include "texture_atlas.h"
@@ -64,8 +65,10 @@ static vita2d_pgf *vita2d_load_pgf_pre(int numFonts)
 
 	unsigned int error;
 	vita2d_pgf *font = sceClibMspaceMalloc(mspace_internal, sizeof(*font));
-	if (!font)
+	if (!font) {
+		SCE_DBG_LOG_ERROR("[PGF] sceClibMspaceMalloc() returned NULL");
 		return NULL;
+	}
 	sceClibMemset(font, 0, sizeof(vita2d_pgf));
 
 	SceFontNewLibParams params = {
@@ -84,6 +87,7 @@ static vita2d_pgf *vita2d_load_pgf_pre(int numFonts)
 
 	font->lib_handle = sceFontNewLib(&params, &error);
 	if (error != 0) {
+		SCE_DBG_LOG_ERROR("[PGF] sceFontNewLib(): 0x%X", error);
 		sceClibMspaceFree(mspace_internal, font);
 		return NULL;
 	}
@@ -93,6 +97,7 @@ static vita2d_pgf *vita2d_load_pgf_pre(int numFonts)
 vita2d_pgf *vita2d_load_system_pgf(int numFonts, const vita2d_system_pgf_config *configs)
 {
 	if (numFonts < 1) {
+		SCE_DBG_LOG_ERROR("[PGF] Invalid argument: numFonts");
 		return NULL;
 	}
 
@@ -101,8 +106,10 @@ vita2d_pgf *vita2d_load_system_pgf(int numFonts, const vita2d_system_pgf_config 
 
 	vita2d_pgf *font = vita2d_load_pgf_pre(numFonts);
 
-	if (!font)
+	if (!font) {
+		SCE_DBG_LOG_ERROR("[PGF] vita2d_load_pgf_pre() returned NULL");
 		return NULL;
+	}
 
 	SceFontStyle style = {0};
 	style.fontH = 10;
@@ -166,17 +173,21 @@ vita2d_pgf *vita2d_load_custom_pgf(const char *path)
 	unsigned int error;
 	vita2d_pgf *font = vita2d_load_pgf_pre(1);
 
-	if (!font)
+	if (!font) {
+		SCE_DBG_LOG_ERROR("[PGF] vita2d_load_pgf_pre() returned NULL");
 		return NULL;
+	}
 
 	vita2d_pgf_font_handle *handle = sceClibMspaceMalloc(mspace_internal, sizeof(vita2d_pgf_font_handle));
 	if (!handle) {
+		SCE_DBG_LOG_ERROR("[PGF] sceClibMspaceMalloc() returned NULL");
 		sceClibMspaceFree(mspace_internal, font);
 		return NULL;
 	}
 
 	SceFontHandle font_handle = sceFontOpenUserFile(font->lib_handle, (char *)path, 1, &error);
 	if (error != 0) {
+		SCE_DBG_LOG_ERROR("[PGF] sceFontOpenUserFile(): 0x%X", error);
 		sceFontDoneLib(font->lib_handle);
 		sceClibMspaceFree(mspace_internal, handle);
 		sceClibMspaceFree(mspace_internal, font);

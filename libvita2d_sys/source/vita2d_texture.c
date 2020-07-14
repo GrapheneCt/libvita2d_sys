@@ -1,5 +1,6 @@
 #include <psp2/kernel/sysmem.h>
 #include <psp2/kernel/clib.h>
+#include <psp2/libdbg.h>
 #include <math.h>
 #include "vita2d_sys.h"
 #include "utils.h"
@@ -55,12 +56,16 @@ vita2d_texture *vita2d_create_empty_texture(unsigned int w, unsigned int h)
 
 static vita2d_texture *_vita2d_create_empty_texture_format_advanced(unsigned int w, unsigned int h, SceGxmTextureFormat format, unsigned int isRenderTarget)
 {
-	if (w > GXM_TEX_MAX_SIZE || h > GXM_TEX_MAX_SIZE)
+	if (w > GXM_TEX_MAX_SIZE || h > GXM_TEX_MAX_SIZE) {
+		SCE_DBG_LOG_ERROR("[TEX] Texture is too big!");
 		return NULL;
+	}
 
 	vita2d_texture *texture = sceClibMspaceMalloc(mspace_internal, sizeof(*texture));
-	if (!texture)
+	if (!texture) {
+		SCE_DBG_LOG_ERROR("[TEX] sceClibMspaceMalloc() returned NULL");
 		return NULL;
+	}
 
 	const int tex_size = ((w + 7) & ~7) * h * tex_format_to_bytespp(format);
 
@@ -73,6 +78,7 @@ static vita2d_texture *_vita2d_create_empty_texture_format_advanced(unsigned int
 		&texture->data_UID);
 
 	if (!texture_data) {
+		SCE_DBG_LOG_ERROR("[TEX] gpu_alloc() returned NULL");
 		sceClibMspaceFree(mspace_internal, texture);
 		return NULL;
 	}
@@ -101,6 +107,7 @@ static vita2d_texture *_vita2d_create_empty_texture_format_advanced(unsigned int
 			&texture->palette_UID);
 
 		if (!texture_palette) {
+			SCE_DBG_LOG_ERROR("[TEX] gpu_alloc() returned NULL");
 			texture->palette_UID = 0;
 			vita2d_free_texture(texture);
 			return NULL;
@@ -128,6 +135,7 @@ static vita2d_texture *_vita2d_create_empty_texture_format_advanced(unsigned int
 		);
 
 		if (err < 0) {
+			SCE_DBG_LOG_ERROR("[TEX] sceGxmColorSurfaceInit(): 0x%X", err);
 			vita2d_free_texture(texture);
 			return NULL;
 		}
@@ -156,6 +164,7 @@ static vita2d_texture *_vita2d_create_empty_texture_format_advanced(unsigned int
 			NULL);
 
 		if (err < 0) {
+			SCE_DBG_LOG_ERROR("[TEX] sceGxmDepthStencilSurfaceInit(): 0x%X", err);
 			vita2d_free_texture(texture);
 			return NULL;
 		}
@@ -179,6 +188,7 @@ static vita2d_texture *_vita2d_create_empty_texture_format_advanced(unsigned int
 		texture->gxm_rtgt = tgt;
 
 		if (err < 0) {
+			SCE_DBG_LOG_ERROR("[TEX] sceGxmCreateRenderTarget(): 0x%X", err);
 			vita2d_free_texture(texture);
 			return NULL;
 		}

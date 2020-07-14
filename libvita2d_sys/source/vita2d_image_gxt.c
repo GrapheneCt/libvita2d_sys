@@ -3,6 +3,7 @@
 #include <psp2/gxm.h>
 #include <psp2/gxt.h>
 #include <psp2/io/stat.h>
+#include <psp2/libdbg.h>
 #include "vita2d_sys.h"
 
 #include "fios2ac.h"
@@ -12,16 +13,23 @@ extern void* mspace_internal;
 
 vita2d_texture *vita2d_load_additional_GXT(vita2d_texture *initial_tex, int texture_index)
 {
+	int ret;
+
 	vita2d_texture *texture = sceClibMspaceMalloc(mspace_internal, sizeof(*texture));
-	if (!texture)
+	if (!texture) {
+		SCE_DBG_LOG_ERROR("[GXT] sceClibMspaceMalloc() returned NULL");
 		goto exit_error;
+	}
 
 	sceClibMemset(texture, 0, sizeof(vita2d_texture));
 
 	void *actual_texture_data = sceGxtGetDataAddress(initial_tex->gxt_data);
 
 	SceGxmTexture texture_gxm;
-	sceGxtInitTexture(&texture_gxm, initial_tex->gxt_data, actual_texture_data, texture_index);
+	ret = sceGxtInitTexture(&texture_gxm, initial_tex->gxt_data, actual_texture_data, texture_index);
+
+	if (ret < 0)
+		SCE_DBG_LOG_ERROR("[GXT] sceGxtInitTexture(): 0x%X", ret);
 
 	texture->gxm_tex = texture_gxm;
 
@@ -33,10 +41,13 @@ exit_error:
 
 vita2d_texture *vita2d_load_GXT_file_FIOS2(char* mountedFilePath, int texture_index)
 {
+	int ret;
 
 	vita2d_texture *texture = sceClibMspaceMalloc(mspace_internal, sizeof(*texture));
-	if (!texture)
+	if (!texture) {
+		SCE_DBG_LOG_ERROR("[GXT] sceClibMspaceMalloc() returned NULL");
 		goto exit_error;
+	}
 
 	sceClibMemset(texture, 0, sizeof(vita2d_texture));
 
@@ -52,28 +63,46 @@ vita2d_texture *vita2d_load_GXT_file_FIOS2(char* mountedFilePath, int texture_in
 	if (sceKernelGetMemBlockBase(tex_data_uid, &texture_data) < 0)
 		goto exit_error_free;
 
-	if (sceGxmMapMemory(texture_data, size, SCE_GXM_MEMORY_ATTRIB_READ | SCE_GXM_MEMORY_ATTRIB_WRITE) < 0)
+	ret = sceGxmMapMemory(texture_data, size, SCE_GXM_MEMORY_ATTRIB_READ | SCE_GXM_MEMORY_ATTRIB_WRITE);
+
+	if (ret < 0) {
+		SCE_DBG_LOG_ERROR("[GXT] sceGxmMapMemory(): 0x%X", ret);
 		goto exit_error_free;
+	}
 
 	unsigned int read_size;
 
 	SceFiosFH fd;
-	sceFiosFHOpenSync(NULL, &fd, mountedFilePath, NULL);
+	ret = sceFiosFHOpenSync(NULL, &fd, mountedFilePath, NULL);
+
+	if (ret < 0)
+		SCE_DBG_LOG_ERROR("[GXT] Can't open file %s sceFiosFHOpenSync(): 0x%X", mountedFilePath, ret);
+
 	read_size = sceFiosFHReadSync(NULL, fd, texture_data, fios_stat.fileSize);
 	sceFiosFHCloseSync(NULL, fd);
 
-	if (read_size != fios_stat.fileSize)
+	if (read_size != fios_stat.fileSize) {
+		SCE_DBG_LOG_ERROR("[GXT] Can't read file %s", mountedFilePath);
 		goto exit_error_free;
+	}
 
-	if (sceGxtCheckData(texture_data) < 0)
+	ret = sceGxtCheckData(texture_data);
+
+	if (ret < 0) {
+		SCE_DBG_LOG_ERROR("[GXT] sceGxtCheckData(): 0x%X", ret);
 		goto exit_error_free;
+	}
 
 	texture->gxt_data = texture_data;
 
 	void *actual_texture_data = sceGxtGetDataAddress(texture_data);
 
-	if (sceGxtInitTexture(&texture->gxm_tex, texture_data, actual_texture_data, texture_index) < 0)
+	ret = sceGxtInitTexture(&texture->gxm_tex, texture_data, actual_texture_data, texture_index);
+
+	if (ret < 0) {
+		SCE_DBG_LOG_ERROR("[GXT] sceGxtInitTexture(): 0x%X", ret);
 		goto exit_error_free;
+	}
 
 	return texture;
 
@@ -87,12 +116,16 @@ exit_error:
 
 vita2d_texture *vita2d_load_GXT_file(char *filename, int texture_index, int io_type)
 {
+	int ret;
+
 	if (io_type == 1)
 		return vita2d_load_GXT_file_FIOS2(filename, texture_index);
 
 	vita2d_texture *texture = sceClibMspaceMalloc(mspace_internal, sizeof(*texture));
-	if (!texture)
+	if (!texture) {
+		SCE_DBG_LOG_ERROR("[GXT] sceClibMspaceMalloc() returned NULL");
 		goto exit_error;
+	}
 
 	sceClibMemset(texture, 0, sizeof(vita2d_texture));
 
@@ -108,27 +141,45 @@ vita2d_texture *vita2d_load_GXT_file(char *filename, int texture_index, int io_t
 	if (sceKernelGetMemBlockBase(tex_data_uid, &texture_data) < 0)
 		goto exit_error_free;
 
-	if (sceGxmMapMemory(texture_data, size, SCE_GXM_MEMORY_ATTRIB_READ | SCE_GXM_MEMORY_ATTRIB_WRITE) < 0)
+	ret = sceGxmMapMemory(texture_data, size, SCE_GXM_MEMORY_ATTRIB_READ | SCE_GXM_MEMORY_ATTRIB_WRITE);
+
+	if (ret < 0) {
+		SCE_DBG_LOG_ERROR("[GXT] sceGxmMapMemory(): 0x%X", ret);
 		goto exit_error_free;
+	}
 
 	unsigned int read_size;
 
 	SceUID fd = sceIoOpen(filename, SCE_O_RDONLY, 0);
+
+	if (fd < 0)
+		SCE_DBG_LOG_ERROR("[GXT] Can't open file %s sceIoOpen(): 0x%X", filename, ret);
+
 	read_size = sceIoRead(fd, texture_data, file_stat.st_size);
 	sceIoClose(fd);
 
-	if (read_size != file_stat.st_size)
+	if (read_size != file_stat.st_size) {
+		SCE_DBG_LOG_ERROR("[GXT] Can't read file %s", filename);
 		goto exit_error_free;
+	}
 
-	if (sceGxtCheckData(texture_data) < 0)
+	ret = sceGxtCheckData(texture_data);
+
+	if (ret < 0) {
+		SCE_DBG_LOG_ERROR("[GXT] sceGxtCheckData(): 0x%X", ret);
 		goto exit_error_free;
+	}
 
 	texture->gxt_data = texture_data;
 
 	void *actual_texture_data = sceGxtGetDataAddress(texture_data);
 
-	if (sceGxtInitTexture(&texture->gxm_tex, texture_data, actual_texture_data, texture_index) < 0)
+	ret = sceGxtInitTexture(&texture->gxm_tex, texture_data, actual_texture_data, texture_index);
+
+	if (ret < 0) {
+		SCE_DBG_LOG_ERROR("[GXT] sceGxtInitTexture(): 0x%X", ret);
 		goto exit_error_free;
+	}
 
 	return texture;
 
