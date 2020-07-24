@@ -35,7 +35,7 @@ add_executable(${PROJECT_NAME}
 )
 
 link_directories(${CMAKE_CURRENT_BINARY_DIR})
-set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -Wall -nostdlib")
+set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -Wall -nostdlib -fno-builtin")
 
 set_target_properties(${PROJECT_NAME}
   PROPERTIES LINK_FLAGS
