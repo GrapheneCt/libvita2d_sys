@@ -1,11 +1,10 @@
 #include <arm_neon.h>
-#include <psp2/io/fcntl.h>
+#include <psp2/kernel/iofilemgr.h>
 #include <psp2/sysmodule.h>
 #include <psp2/gxm.h>
 #include <psp2/jpegarm.h>
 #include "vita2d_sys.h"
 #include <psp2/kernel/clib.h> 
-#include <psp2/io/stat.h>
 #include <psp2/libdbg.h>
 #include "utils.h"
 #include "fios2ac.h"

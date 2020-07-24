@@ -1,8 +1,7 @@
-#include <psp2/io/fcntl.h>
+#include <psp2/kernel/iofilemgr.h>
 #include <psp2/kernel/clib.h>
 #include <psp2/gxm.h>
 #include <psp2/gxt.h>
-#include <psp2/io/stat.h>
 #include <psp2/libdbg.h>
 #include "vita2d_sys.h"
 
