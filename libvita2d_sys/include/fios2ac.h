@@ -1,7 +1,7 @@
 #ifndef FIOS2AC_H
 #define FIOS2AC_H
 
-#include <psp2/io/stat.h>
+#include <psp2/kernel/iofilemgr.h>
 #include <psp2/types.h>
 
 typedef SceInt32 SceFiosFH;
