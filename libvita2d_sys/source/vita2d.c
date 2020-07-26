@@ -735,7 +735,7 @@ static int vita2d_init_internal_common(unsigned int temp_pool_size, unsigned int
 	// Allocate memory for the memory pool
 	pool_size = temp_pool_size;
 	pool_addr = gpu_alloc(
-		SCE_KERNEL_MEMBLOCK_TYPE_USER_RW,
+		SCE_KERNEL_MEMBLOCK_TYPE_USER_RW_UNCACHE,
 		pool_size,
 		sizeof(void *),
 		SCE_GXM_MEMORY_ATTRIB_READ,
