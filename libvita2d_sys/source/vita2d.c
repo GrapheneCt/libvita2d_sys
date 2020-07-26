@@ -278,23 +278,25 @@ static int vita2d_init_internal_common(unsigned int temp_pool_size, unsigned int
 	unsigned int i, x, y;
 	UNUSED(err);
 
+	SceKernelMemBlockType mem_type = vita2d_texture_get_alloc_memblock_type();
+
 	// allocate ring buffer memory using default sizes
 	void *vdmRingBuffer = gpu_alloc(
-		SCE_KERNEL_MEMBLOCK_TYPE_USER_RW_UNCACHE,
+		mem_type,
 		vdmRingBufferMemsize,
 		4,
 		SCE_GXM_MEMORY_ATTRIB_READ,
 		&vdmRingBufferUid);
 
 	void *vertexRingBuffer = gpu_alloc(
-		SCE_KERNEL_MEMBLOCK_TYPE_USER_RW_UNCACHE,
+		mem_type,
 		vertexRingBufferMemsize,
 		4,
 		SCE_GXM_MEMORY_ATTRIB_READ,
 		&vertexRingBufferUid);
 
 	void *fragmentRingBuffer = gpu_alloc(
-		SCE_KERNEL_MEMBLOCK_TYPE_USER_RW_UNCACHE,
+		mem_type,
 		fragmentRingBufferMemsize,
 		4,
 		SCE_GXM_MEMORY_ATTRIB_READ,
@@ -404,7 +406,7 @@ static int vita2d_init_internal_common(unsigned int temp_pool_size, unsigned int
 
 	// allocate the depth buffer
 	depthBufferData = gpu_alloc(
-		SCE_KERNEL_MEMBLOCK_TYPE_USER_RW_UNCACHE,
+		mem_type,
 		4 * sampleCount,
 		SCE_GXM_DEPTHSTENCIL_SURFACE_ALIGNMENT,
 		SCE_GXM_MEMORY_ATTRIB_READ | SCE_GXM_MEMORY_ATTRIB_WRITE,
@@ -412,7 +414,7 @@ static int vita2d_init_internal_common(unsigned int temp_pool_size, unsigned int
 
 	// allocate the stencil buffer
 	stencilBufferData = gpu_alloc(
-		SCE_KERNEL_MEMBLOCK_TYPE_USER_RW_UNCACHE,
+		mem_type,
 		4 * sampleCount,
 		SCE_GXM_DEPTHSTENCIL_SURFACE_ALIGNMENT,
 		SCE_GXM_MEMORY_ATTRIB_READ | SCE_GXM_MEMORY_ATTRIB_WRITE,
@@ -450,7 +452,7 @@ static int vita2d_init_internal_common(unsigned int temp_pool_size, unsigned int
 
 	// allocate memory for buffers and USSE code
 	void *patcherBuffer = gpu_alloc(
-		SCE_KERNEL_MEMBLOCK_TYPE_USER_RW_UNCACHE,
+		mem_type,
 		patcherBufferSize,
 		4,
 		SCE_GXM_MEMORY_ATTRIB_READ | SCE_GXM_MEMORY_ATTRIB_WRITE,
@@ -608,7 +610,7 @@ static int vita2d_init_internal_common(unsigned int temp_pool_size, unsigned int
 
 	// create the clear triangle vertex/index data
 	clearVertices = (vita2d_clear_vertex *)gpu_alloc(
-		SCE_KERNEL_MEMBLOCK_TYPE_USER_RW_UNCACHE,
+		mem_type,
 		3 * sizeof(vita2d_clear_vertex),
 		4,
 		SCE_GXM_MEMORY_ATTRIB_READ,
@@ -618,7 +620,7 @@ static int vita2d_init_internal_common(unsigned int temp_pool_size, unsigned int
 	// 16-bit indices in linear ascending order, so we can use this for
 	// all drawing operations where we don't want to use indexing.
 	linearIndices = (uint16_t *)gpu_alloc(
-		SCE_KERNEL_MEMBLOCK_TYPE_USER_RW_UNCACHE,
+		mem_type,
 		UINT16_MAX * sizeof(uint16_t),
 		sizeof(uint16_t),
 		SCE_GXM_MEMORY_ATTRIB_READ,
@@ -735,7 +737,7 @@ static int vita2d_init_internal_common(unsigned int temp_pool_size, unsigned int
 	// Allocate memory for the memory pool
 	pool_size = temp_pool_size;
 	pool_addr = gpu_alloc(
-		SCE_KERNEL_MEMBLOCK_TYPE_USER_RW_UNCACHE,
+		mem_type,
 		pool_size,
 		sizeof(void *),
 		SCE_GXM_MEMORY_ATTRIB_READ,
