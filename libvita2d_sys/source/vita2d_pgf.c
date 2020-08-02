@@ -17,8 +17,6 @@
 extern void* mspace_internal;
 extern int pgf_module_was_loaded;
 
-extern void* sceClibMspaceMemalign(void* space, unsigned int alignment, unsigned int size);
-
 typedef struct vita2d_pgf_font_handle {
 	SceFontHandle font_handle;
 	int (*in_font_group)(unsigned int c);

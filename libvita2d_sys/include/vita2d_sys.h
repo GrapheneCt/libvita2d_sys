@@ -15,6 +15,11 @@ extern "C" {
 
 #define RGBA8(r,g,b,a) ((((a)&0xFF)<<24) | (((b)&0xFF)<<16) | (((g)&0xFF)<<8) | (((r)&0xFF)<<0))
 
+typedef enum vita2d_io_type {
+	VITA2D_IO_TYPE_NORMAL,
+	VITA2D_IO_TYPE_FIOS2
+} vita2d_io_type;
+
 typedef struct vita2d_clear_vertex {
 	float x;
 	float y;

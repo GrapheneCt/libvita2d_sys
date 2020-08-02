@@ -8,6 +8,28 @@ typedef SceInt32 SceFiosFH;
 typedef SceUInt64 SceFiosDate;
 typedef SceInt64 SceFiosOffset;
 typedef SceInt64 SceFiosSize;
+typedef int32_t SceFiosHandle;
+typedef SceFiosHandle SceFiosOp;
+typedef int64_t SceFiosTime;
+typedef uint8_t SceFiosOpEvent;
+
+typedef int(*SceFiosOpCallback)(
+	void *pContext,
+	SceFiosOp op,
+	SceFiosOpEvent event,
+	int err
+	);
+
+typedef struct SceFiosOpAttr {
+	SceFiosTime deadline;
+	SceFiosOpCallback pCallback;
+	void *pCallbackContext;
+	int32_t priority : 8;
+	uint32_t opflags : 24;
+	uint32_t userTag;
+	void *userPtr;
+	void *pReserved;
+} SceFiosOpAttr;
 
 typedef struct SceFiosStat {
 	SceFiosOffset fileSize;
@@ -34,5 +56,7 @@ SceInt32 sceFiosFHOpenSync(const ScePVoid attr, SceFiosFH* fh, const SceName pat
 SceFiosSize sceFiosFHReadSync(const ScePVoid attr, SceFiosFH fh, ScePVoid data, SceFiosSize size);
 SceInt32 sceFiosFHCloseSync(const ScePVoid attr, SceFiosFH fh);
 SceFiosOffset sceFiosFHSeek(SceFiosFH fh, SceFiosOffset offset, SceFiosWhence whence);
+
+SceFiosOp sceFiosFHClose(const SceFiosOpAttr *pAttr, SceFiosFH fh);
 
 #endif

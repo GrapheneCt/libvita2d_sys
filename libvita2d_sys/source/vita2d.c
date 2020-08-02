@@ -4,6 +4,8 @@
 #include <psp2/kernel/sysmem.h>
 #include <psp2/kernel/clib.h>
 #include <psp2/kernel/threadmgr.h> 
+#include <psp2/kernel/iofilemgr.h>
+#include <psp2/kernel/dmac.h>
 #include <psp2/message_dialog.h>
 #include <psp2/sysmodule.h>
 #include <psp2/appmgr.h>
@@ -12,18 +14,12 @@
 #include "vita2d_sys.h"
 #include "utils.h"
 
-#ifdef DEBUG_BUILD
-#  define DEBUG(...) sceClibPrintf(__VA_ARGS__)
-#else
-#  define DEBUG(...)
-#endif
-
 /* Defines */
 
 #define DISPLAY_COLOR_FORMAT		SCE_GXM_COLOR_FORMAT_A8B8G8R8
 #define DISPLAY_PIXEL_FORMAT		SCE_DISPLAY_PIXELFORMAT_A8B8G8R8
 #define DISPLAY_BUFFER_COUNT		2
-#define DISPLAY_MAX_PENDING_SWAPS	1
+#define DISPLAY_MAX_PENDING_SWAPS	2
 #define DEFAULT_TEMP_POOL_SIZE		(1 * 1024 * 1024)
 
 typedef struct SceSharedFbInfo { // size is 0x58
@@ -55,17 +51,9 @@ typedef struct vita2d_display_data {
 	void *address;
 } vita2d_display_data;
 
-int sceKernelIsGameBudget(void);
-
-/* SharedFb */
-
-SceUID _sceSharedFbOpen(int a1, int sysver);
-int sceSharedFbClose(SceUID shared_fb_id);
-int sceSharedFbBegin(SceUID shared_fb_id, SceSharedFbInfo *info);
-int sceSharedFbEnd(SceUID shared_fb_id);
-int sceSharedFbGetInfo(SceUID shared_fb_id, SceSharedFbInfo *info);
-
 /* Extern */
+
+extern int sceKernelIsGameBudget(void);
 
 extern const SceGxmProgram clear_v_gxp_start;
 extern const SceGxmProgram clear_f_gxp_start;
@@ -275,7 +263,7 @@ static int vita2d_init_internal_common(unsigned int temp_pool_size, unsigned int
 	unsigned int fragmentRingBufferMemsize, unsigned int fragmentUsseRingBufferMemsize, SceGxmMultisampleMode msaa)
 {
 	int err;
-	unsigned int i, x, y;
+	unsigned int i;
 	UNUSED(err);
 
 	SceKernelMemBlockType mem_type = vita2d_texture_get_alloc_memblock_type();
@@ -362,12 +350,18 @@ static int vita2d_init_internal_common(unsigned int temp_pool_size, unsigned int
 				&displayBufferUid[i]);
 
 			// memset the buffer to black
-			for (y = 0; y < display_vres; y++) {
-				unsigned int *row = (unsigned int *)displayBufferData[i] + y * display_stride;
-				for (x = 0; x < display_hres; x++) {
-					row[x] = 0xff000000;
-				}
-			}
+			sceGxmTransferFill(
+				0xff000000,
+				SCE_GXM_TRANSFER_FORMAT_U8U8U8U8_ABGR,
+				displayBufferData[i],
+				0,
+				0,
+				display_hres,
+				display_vres,
+				display_stride,
+				NULL,
+				0,
+				NULL);
 		}
 
 		// initialize a color surface for this display buffer
@@ -745,6 +739,9 @@ static int vita2d_init_internal_common(unsigned int temp_pool_size, unsigned int
 
 	matrix_init_orthographic(_vita2d_ortho_matrix, 0.0f, display_hres, display_vres, 0.0f, 0.0f, 1.0f);
 
+	/* Wait if there are unfinished PTLA operations */
+	sceGxmTransferFinish();
+
 	vita2d_initialized = 1;
 	return 1;
 }
@@ -780,7 +777,7 @@ static int vita2d_init_internal(unsigned int temp_pool_size, unsigned int vdmRin
 			SCE_DBG_LOG_ERROR("sceGxmVshInitialize(): 0x%X", err);
 
 		while (1) {
-			shfb_id = _sceSharedFbOpen(1, SCE_PSP2_SDK_VERSION);
+			shfb_id = sceSharedFbOpen(1);
 			sceSharedFbGetInfo(shfb_id, &info);
 			if (info.curbuf == 1)
 				sceSharedFbClose(shfb_id);
@@ -909,7 +906,7 @@ int vita2d_fini()
 	for (i = 0; i < DISPLAY_BUFFER_COUNT; i++) {
 		if (!system_mode_flag) {
 			// clear the buffer then deallocate
-			sceClibMemset(displayBufferData[i], 0, display_vres*display_stride * 4);
+			sceDmacMemset(displayBufferData[i], 0, display_vres*display_stride * 4);
 			gpu_free(displayBufferUid[i]);
 		}
 

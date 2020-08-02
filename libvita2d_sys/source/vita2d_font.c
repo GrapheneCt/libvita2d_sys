@@ -215,7 +215,7 @@ static int atlas_add_glyph(texture_atlas *atlas, unsigned int glyph_index,
 	tex_width = vita2d_texture_get_width(atlas->texture);
 
 	for (i = 0; i < size.h; i++) {
-		memcpy(texture_data + (position.x + (position.y + i) * tex_width),
+		sceClibMemcpy(texture_data + (position.x + (position.y + i) * tex_width),
 		       buffer + i * size.w, size.w);
 	}
 
