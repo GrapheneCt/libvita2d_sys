@@ -4,7 +4,9 @@
 #include <psp2/kernel/sysmem.h>
 #include <psp2/kernel/clib.h>
 #include <psp2/kernel/threadmgr.h> 
-#include <psp2/kernel/modulemgr.h> 
+#include <psp2/kernel/iofilemgr.h>
+#include <psp2/kernel/modulemgr.h>
+#include <psp2/kernel/dmac.h>
 #include <psp2/message_dialog.h>
 #include <psp2/sysmodule.h>
 #include <psp2/appmgr.h>
@@ -24,7 +26,7 @@
 #define DISPLAY_COLOR_FORMAT		SCE_GXM_COLOR_FORMAT_A8B8G8R8
 #define DISPLAY_PIXEL_FORMAT		SCE_DISPLAY_PIXELFORMAT_A8B8G8R8
 #define DISPLAY_BUFFER_COUNT		2
-#define DISPLAY_MAX_PENDING_SWAPS	1
+#define DISPLAY_MAX_PENDING_SWAPS	2
 #define DEFAULT_TEMP_POOL_SIZE		(1 * 1024 * 1024)
 
 typedef struct SceSharedFbInfo { // size is 0x58
@@ -56,17 +58,9 @@ typedef struct vita2d_display_data {
 	void *address;
 } vita2d_display_data;
 
-int sceKernelIsGameBudget(void);
-
-/* SharedFb */
-
-SceUID _sceSharedFbOpen(int a1, int sysver);
-int sceSharedFbClose(SceUID shared_fb_id);
-int sceSharedFbBegin(SceUID shared_fb_id, SceSharedFbInfo *info);
-int sceSharedFbEnd(SceUID shared_fb_id);
-int sceSharedFbGetInfo(SceUID shared_fb_id, SceSharedFbInfo *info);
-
 /* Extern */
+
+extern int sceKernelIsGameBudget(void);
 
 extern const SceGxmProgram clear_v_gxp_start;
 extern const SceGxmProgram clear_f_gxp_start;
@@ -80,12 +74,12 @@ extern const SceGxmProgram texture_tint_f_gxp_start;
 
 static SceSharedFbInfo info;
 
-static const SceGxmProgram *const clearVertexProgramGxp         = &clear_v_gxp_start;
-static const SceGxmProgram *const clearFragmentProgramGxp       = &clear_f_gxp_start;
-static const SceGxmProgram *const colorVertexProgramGxp         = &color_v_gxp_start;
-static const SceGxmProgram *const colorFragmentProgramGxp       = &color_f_gxp_start;
-static const SceGxmProgram *const textureVertexProgramGxp       = &texture_v_gxp_start;
-static const SceGxmProgram *const textureFragmentProgramGxp     = &texture_f_gxp_start;
+static const SceGxmProgram *const clearVertexProgramGxp = &clear_v_gxp_start;
+static const SceGxmProgram *const clearFragmentProgramGxp = &clear_f_gxp_start;
+static const SceGxmProgram *const colorVertexProgramGxp = &color_v_gxp_start;
+static const SceGxmProgram *const colorFragmentProgramGxp = &color_f_gxp_start;
+static const SceGxmProgram *const textureVertexProgramGxp = &texture_v_gxp_start;
+static const SceGxmProgram *const textureFragmentProgramGxp = &texture_f_gxp_start;
 static const SceGxmProgram *const textureTintFragmentProgramGxp = &texture_tint_f_gxp_start;
 
 static int display_hres = 960;
@@ -93,7 +87,7 @@ static int display_vres = 544;
 static int display_stride = 960;
 
 static int vita2d_initialized = 0;
-static float clear_color[4] = {0.0f, 0.0f, 0.0f, 1.0f};
+static float clear_color[4] = { 0.0f, 0.0f, 0.0f, 1.0f };
 static unsigned int clear_color_u = 0xFF000000;
 static int clip_rect_x_min = 0;
 static int clip_rect_y_min = 0;
@@ -149,10 +143,11 @@ static vita2d_clear_vertex *clearVertices = NULL;
 static uint16_t *linearIndices = NULL;
 
 /* Shared with other .c */
+SceUID async_io[MAX_ASYNC_IO_HANDLES];
 void* mspace_internal;
 int system_mode_flag = 1;
 int pgf_module_was_loaded = 10;
-float _vita2d_ortho_matrix[4*4];
+float _vita2d_ortho_matrix[4 * 4];
 SceGxmContext *_vita2d_context = NULL;
 SceGxmVertexProgram *_vita2d_colorVertexProgram = NULL;
 SceGxmFragmentProgram *_vita2d_colorFragmentProgram = NULL;
@@ -276,7 +271,7 @@ static int vita2d_init_internal_common(unsigned int temp_pool_size, unsigned int
 	unsigned int fragmentRingBufferMemsize, unsigned int fragmentUsseRingBufferMemsize, SceGxmMultisampleMode msaa)
 {
 	int err;
-	unsigned int i, x, y;
+	unsigned int i;
 	UNUSED(err);
 
 	SceKernelMemBlockType mem_type = vita2d_texture_get_alloc_memblock_type();
@@ -363,12 +358,18 @@ static int vita2d_init_internal_common(unsigned int temp_pool_size, unsigned int
 				&displayBufferUid[i]);
 
 			// memset the buffer to black
-			for (y = 0; y < display_vres; y++) {
-				unsigned int *row = (unsigned int *)displayBufferData[i] + y * display_stride;
-				for (x = 0; x < display_hres; x++) {
-					row[x] = 0xff000000;
-				}
-			}
+			sceGxmTransferFill(
+				0xff000000,
+				SCE_GXM_TRANSFER_FORMAT_U8U8U8U8_ABGR,
+				displayBufferData[i],
+				0,
+				0,
+				display_hres,
+				display_vres,
+				display_stride,
+				NULL,
+				0,
+				NULL);
 		}
 
 		// initialize a color surface for this display buffer
@@ -746,6 +747,9 @@ static int vita2d_init_internal_common(unsigned int temp_pool_size, unsigned int
 
 	matrix_init_orthographic(_vita2d_ortho_matrix, 0.0f, display_hres, display_vres, 0.0f, 0.0f, 1.0f);
 
+	/* Wait if there are unfinished PTLA operations */
+	sceGxmTransferFinish();
+
 	vita2d_initialized = 1;
 	return 1;
 }
@@ -781,7 +785,7 @@ static int vita2d_init_internal(unsigned int temp_pool_size, unsigned int vdmRin
 			SCE_DBG_LOG_ERROR("sceGxmVshInitialize(): 0x%X", err);
 
 		while (1) {
-			shfb_id = _sceSharedFbOpen(1, SCE_PSP2_SDK_VERSION);
+			shfb_id = sceSharedFbOpen(1);
 			sceSharedFbGetInfo(shfb_id, &info);
 			if (info.curbuf == 1)
 				sceSharedFbClose(shfb_id);
@@ -822,7 +826,7 @@ static int vita2d_init_internal(unsigned int temp_pool_size, unsigned int vdmRin
 	}
 }
 
-void vita2d_display_set_resolution(int hRes, int vRes) 
+void vita2d_display_set_resolution(int hRes, int vRes)
 {
 	display_hres = hRes;
 	display_vres = vRes;
@@ -843,11 +847,11 @@ int vita2d_init_advanced(unsigned int temp_pool_size)
 
 int vita2d_init_advanced_with_msaa(unsigned int temp_pool_size, SceGxmMultisampleMode msaa)
 {
-	return vita2d_init_internal(temp_pool_size, SCE_GXM_DEFAULT_VDM_RING_BUFFER_SIZE, SCE_GXM_DEFAULT_VERTEX_RING_BUFFER_SIZE, 
+	return vita2d_init_internal(temp_pool_size, SCE_GXM_DEFAULT_VDM_RING_BUFFER_SIZE, SCE_GXM_DEFAULT_VERTEX_RING_BUFFER_SIZE,
 		SCE_GXM_DEFAULT_FRAGMENT_RING_BUFFER_SIZE, SCE_GXM_DEFAULT_FRAGMENT_USSE_RING_BUFFER_SIZE, msaa);
 }
 
-int vita2d_init_with_msaa_and_memsize(unsigned int temp_pool_size, unsigned int vdmRingBufferMemsize, unsigned int vertexRingBufferMemsize, 
+int vita2d_init_with_msaa_and_memsize(unsigned int temp_pool_size, unsigned int vdmRingBufferMemsize, unsigned int vertexRingBufferMemsize,
 	unsigned int fragmentRingBufferMemsize, unsigned int fragmentUsseRingBufferMemsize, SceGxmMultisampleMode msaa)
 {
 	if (!temp_pool_size)
@@ -910,7 +914,7 @@ int vita2d_fini()
 	for (i = 0; i < DISPLAY_BUFFER_COUNT; i++) {
 		if (!system_mode_flag) {
 			// clear the buffer then deallocate
-			sceClibMemset(displayBufferData[i], 0, display_vres*display_stride * 4);
+			sceDmacMemset(displayBufferData[i], 0, display_vres*display_stride * 4);
 			gpu_free(displayBufferUid[i]);
 		}
 
@@ -1014,8 +1018,9 @@ int vita2d_fini()
 	return 1;
 }
 
-void vita2d_clib_pass_mspace(void* space) 
+void vita2d_clib_pass_mspace(void* space)
 {
+	sceDbgSetMinimumLogLevel(SCE_DBG_LOG_LEVEL_ERROR);
 	mspace_internal = space;
 }
 
@@ -1054,24 +1059,25 @@ void vita2d_start_drawing_advanced(vita2d_texture *target, unsigned int flags)
 
 	if (target == NULL) {
 		sceGxmBeginScene(
-		_vita2d_context,
-		flags,
-		renderTarget,
-		NULL,
-		NULL,
-		displayBufferSync[bufferIndex],
-		&displaySurface[bufferIndex],
-		&depthSurface);
-	} else {
+			_vita2d_context,
+			flags,
+			renderTarget,
+			NULL,
+			NULL,
+			displayBufferSync[bufferIndex],
+			&displaySurface[bufferIndex],
+			&depthSurface);
+	}
+	else {
 		sceGxmBeginScene(
-		_vita2d_context,
-		flags,
-		target->gxm_rtgt,
-		NULL,
-		NULL,
-		NULL,
-		&target->gxm_sfc,
-		&target->gxm_sfd);
+			_vita2d_context,
+			flags,
+			target->gxm_rtgt,
+			NULL,
+			NULL,
+			NULL,
+			&target->gxm_sfc,
+			&target->gxm_sfd);
 	}
 
 	drawing = 1;
@@ -1120,13 +1126,13 @@ void vita2d_disable_clipping()
 {
 	clipping_enabled = 0;
 	sceGxmSetFrontStencilFunc(
-			_vita2d_context,
-			SCE_GXM_STENCIL_FUNC_ALWAYS,
-			SCE_GXM_STENCIL_OP_KEEP,
-			SCE_GXM_STENCIL_OP_KEEP,
-			SCE_GXM_STENCIL_OP_KEEP,
-			0xFF,
-			0xFF);
+		_vita2d_context,
+		SCE_GXM_STENCIL_FUNC_ALWAYS,
+		SCE_GXM_STENCIL_OP_KEEP,
+		SCE_GXM_STENCIL_OP_KEEP,
+		SCE_GXM_STENCIL_OP_KEEP,
+		0xFF,
+		0xFF);
 }
 
 int vita2d_get_clipping_enabled()
@@ -1141,7 +1147,7 @@ void vita2d_set_clip_rectangle(int x_min, int y_min, int x_max, int y_max)
 	clip_rect_x_max = x_max;
 	clip_rect_y_max = y_max;
 	// we can only draw during a scene, but we can cache the values since they're not going to have any visible effect till the scene starts anyways
-	if(drawing) {
+	if (drawing) {
 		// clear the stencil buffer to 0
 		sceGxmSetFrontStencilFunc(
 			_vita2d_context,
@@ -1162,7 +1168,7 @@ void vita2d_set_clip_rectangle(int x_min, int y_min, int x_max, int y_max)
 			0xFF,
 			0xFF);
 		vita2d_draw_rectangle(x_min, y_min, x_max - x_min, y_max - y_min, 0);
-		if(clipping_enabled) {
+		if (clipping_enabled) {
 			// set the stencil function to only accept pixels where the stencil is 1
 			sceGxmSetFrontStencilFunc(
 				_vita2d_context,
@@ -1172,7 +1178,8 @@ void vita2d_set_clip_rectangle(int x_min, int y_min, int x_max, int y_max)
 				SCE_GXM_STENCIL_OP_KEEP,
 				0xFF,
 				0xFF);
-		} else {
+		}
+		else {
 			sceGxmSetFrontStencilFunc(
 				_vita2d_context,
 				SCE_GXM_STENCIL_FUNC_ALWAYS,
@@ -1198,10 +1205,10 @@ int vita2d_common_dialog_update()
 	SceCommonDialogUpdateParam updateParam;
 	sceClibMemset(&updateParam, 0, sizeof(updateParam));
 
-	updateParam.renderTarget.colorFormat    = DISPLAY_COLOR_FORMAT;
-	updateParam.renderTarget.surfaceType    = SCE_GXM_COLOR_SURFACE_LINEAR;
-	updateParam.renderTarget.width          = display_hres;
-	updateParam.renderTarget.height         = display_vres;
+	updateParam.renderTarget.colorFormat = DISPLAY_COLOR_FORMAT;
+	updateParam.renderTarget.surfaceType = SCE_GXM_COLOR_SURFACE_LINEAR;
+	updateParam.renderTarget.width = display_hres;
+	updateParam.renderTarget.height = display_vres;
 	updateParam.renderTarget.strideInPixels = display_stride;
 
 	updateParam.renderTarget.colorSurfaceData = displayBufferData[bufferIndex];
@@ -1213,10 +1220,10 @@ int vita2d_common_dialog_update()
 
 void vita2d_set_clear_color(unsigned int color)
 {
-	clear_color[0] = ((color >> 8*0) & 0xFF)/255.0f;
-	clear_color[1] = ((color >> 8*1) & 0xFF)/255.0f;
-	clear_color[2] = ((color >> 8*2) & 0xFF)/255.0f;
-	clear_color[3] = ((color >> 8*3) & 0xFF)/255.0f;
+	clear_color[0] = ((color >> 8 * 0) & 0xFF) / 255.0f;
+	clear_color[1] = ((color >> 8 * 1) & 0xFF) / 255.0f;
+	clear_color[2] = ((color >> 8 * 2) & 0xFF) / 255.0f;
+	clear_color[3] = ((color >> 8 * 3) & 0xFF) / 255.0f;
 	clear_color_u = color;
 }
 
@@ -1289,12 +1296,13 @@ void vita2d_pool_reset()
 void vita2d_set_blend_mode_add(int enable)
 {
 	vita2d_fragment_programs *in = enable ? &_vita2d_fragmentPrograms.blend_mode_add
-	    : &_vita2d_fragmentPrograms.blend_mode_normal;
+		: &_vita2d_fragmentPrograms.blend_mode_normal;
 
 	_vita2d_colorFragmentProgram = in->color;
 	_vita2d_textureFragmentProgram = in->texture;
 	_vita2d_textureTintFragmentProgram = in->textureTint;
 }
+
 
 int module_stop(SceSize argc, const void *args) {
 	sceClibPrintf("vita2d_sys module stop\n");
@@ -1308,7 +1316,7 @@ int module_exit() {
 
 void _start() __attribute__((weak, alias("module_start")));
 int module_start(SceSize argc, void *args) {
-	sceClibPrintf("vita2d_sys module start\n");
+	sceClibPrintf("vita2d_sys module start, ver. 01.20\n");
 	sceDbgSetMinimumLogLevel(SCE_DBG_LOG_LEVEL_ERROR);
 	return SCE_KERNEL_START_SUCCESS;
 }

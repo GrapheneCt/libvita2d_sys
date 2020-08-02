@@ -3,9 +3,10 @@
 #include <psp2/sysmodule.h>
 #include <psp2/gxm.h>
 #include <psp2/jpegarm.h>
-#include "vita2d_sys.h"
 #include <psp2/kernel/clib.h> 
+#include <psp2/kernel/dmac.h> 
 #include <psp2/libdbg.h>
+#include "vita2d_sys.h"
 #include "utils.h"
 #include "fios2ac.h"
 
@@ -612,7 +613,7 @@ vita2d_texture *vita2d_load_JPEG_file(char *filename, int io_type, int useMainMe
 
 	sceKernelGetMemBlockBase(tex_data_uid, &texture_data);
 
-	ret = sceGxmMapMemory(texture_data, size, SCE_GXM_MEMORY_ATTRIB_READ | SCE_GXM_MEMORY_ATTRIB_WRITE);
+	ret = sceGxmMapMemory(texture_data, size, SCE_GXM_MEMORY_ATTRIB_READ);
 
 	if (ret < 0) {
 		SCE_DBG_LOG_ERROR("[JPEG] sceGxmMapMemory(): 0x%X", ret);
@@ -620,7 +621,10 @@ vita2d_texture *vita2d_load_JPEG_file(char *filename, int io_type, int useMainMe
 	}
 
 	/* Clear the texture */
-	sceClibMemset(texture_data, 0, size);
+	if (size < 128 * 1024)
+		sceClibMemset(texture_data, 0, size);
+	else
+		sceDmacMemset(texture_data, 0, size);
 
 	//E CSC (YCbCr -> RGBA) 
 	if ((decodeMode & 3) == SCE_JPEG_MJPEG_WITH_DHT) {
@@ -847,7 +851,7 @@ vita2d_texture *vita2d_load_JPEG_buffer(const void *buffer, unsigned long buffer
 
 	sceKernelGetMemBlockBase(tex_data_uid, &texture_data);
 
-	ret = sceGxmMapMemory(texture_data, size, SCE_GXM_MEMORY_ATTRIB_READ | SCE_GXM_MEMORY_ATTRIB_WRITE);
+	ret = sceGxmMapMemory(texture_data, size, SCE_GXM_MEMORY_ATTRIB_READ);
 
 	if (ret < 0) {
 		SCE_DBG_LOG_ERROR("[JPEG] sceGxmMapMemory(): 0x%X", ret);
@@ -855,7 +859,10 @@ vita2d_texture *vita2d_load_JPEG_buffer(const void *buffer, unsigned long buffer
 	}
 
 	/* Clear the texture */
-	sceClibMemset(texture_data, 0, size);
+	if (size < 128 * 1024)
+		sceClibMemset(texture_data, 0, size);
+	else
+		sceDmacMemset(texture_data, 0, size);
 
 	//E CSC (YCbCr -> RGBA) 
 	if ((decodeMode & 3) == SCE_JPEG_MJPEG_WITH_DHT) {
@@ -1028,7 +1035,7 @@ vita2d_texture *vita2d_load_JPEG_ARM_file(char *filename, int io_type, int useDo
 
 	unsigned int gxmMemSize = ROUND_UP(outputInfo.outputBufferSize, 4 * 1024);
 
-	ret = sceGxmMapMemory((void*)texture_data, gxmMemSize, SCE_GXM_MEMORY_ATTRIB_READ | SCE_GXM_MEMORY_ATTRIB_WRITE);
+	ret = sceGxmMapMemory((void*)texture_data, gxmMemSize, SCE_GXM_MEMORY_ATTRIB_READ);
 
 	if (ret < 0) {
 		SCE_DBG_LOG_ERROR("[JPEG] sceGxmMapMemory(): 0x%X", ret);
@@ -1196,7 +1203,7 @@ vita2d_texture *vita2d_load_JPEG_ARM_buffer(const void *buffer, unsigned long bu
 
 	unsigned int gxmMemSize = ROUND_UP(outputInfo.outputBufferSize, 4 * 1024);
 
-	ret = sceGxmMapMemory((void*)texture_data, gxmMemSize, SCE_GXM_MEMORY_ATTRIB_READ | SCE_GXM_MEMORY_ATTRIB_WRITE);
+	ret = sceGxmMapMemory((void*)texture_data, gxmMemSize, SCE_GXM_MEMORY_ATTRIB_READ);
 
 	if (ret < 0) {
 		SCE_DBG_LOG_ERROR("[JPEG] sceGxmMapMemory(): 0x%X", ret);

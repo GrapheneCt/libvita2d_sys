@@ -17,9 +17,6 @@
 
 extern void* mspace_internal;
 
-extern void* sceClibMspaceMemalign(void* space, unsigned int alignment, unsigned int size);
-extern void* sceClibMspaceRealloc(void* space, void* adress, unsigned int size);
-
 typedef struct vita2d_pvf_font_handle {
 	ScePvfFontId font_handle;
 	int (*in_font_group)(unsigned int c);

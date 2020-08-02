@@ -1,5 +1,6 @@
 #include <psp2/kernel/sysmem.h>
 #include <psp2/kernel/clib.h>
+#include <psp2/kernel/dmac.h>
 #include <psp2/libdbg.h>
 #include <math.h>
 #include "vita2d_sys.h"
@@ -84,7 +85,10 @@ static vita2d_texture *_vita2d_create_empty_texture_format_advanced(unsigned int
 	}
 
 	/* Clear the texture */
-	sceClibMemset(texture_data, 0, tex_size);
+	if (tex_size < 128 * 1024)
+		sceClibMemset(texture_data, 0, tex_size);
+	else
+		sceDmacMemset(texture_data, 0, tex_size);
 
 	/* Create the gxm texture */
 	sceGxmTextureInitLinear(

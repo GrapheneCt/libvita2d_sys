@@ -12,6 +12,7 @@ extern "C" {
 #endif
 
 #define WIDGET_BUTTON_MAX_TEXT_LEN 256
+#define MAX_ASYNC_IO_HANDLES 6
 
 #define RGBA8(r,g,b,a) ((((a)&0xFF)<<24) | (((b)&0xFF)<<16) | (((g)&0xFF)<<8) | (((r)&0xFF)<<0))
 

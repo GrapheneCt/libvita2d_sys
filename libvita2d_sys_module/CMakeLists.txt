@@ -60,6 +60,7 @@ target_link_libraries(${PROJECT_NAME}
   SceCommonDialog_stub_weak
   SceDbg_stub_weak
   SceProcessMgr_stub_weak
+  SceKernelDmacMgr_stub
   SceFios2_stub_weak
   SceJpeg_stub_weak
   SceJpegArm_stub_weak
