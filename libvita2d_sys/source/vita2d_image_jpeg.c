@@ -649,11 +649,6 @@ vita2d_texture *vita2d_load_JPEG_file(char *filename, int io_type, int useMainMe
 			SCE_JPEG_PIXEL_RGBA8888, outputInfo.colorSpace & 0xFFFF);
 	}
 
-	if (ret < 0) {
-		SCE_DBG_LOG_ERROR("[JPEG] CSC failed: 0x%X", ret);
-		goto error_free_file_hw_all_buf;
-	}
-
 	vita2d_texture *texture = sceClibMspaceMalloc(mspace_internal, sizeof(*texture));
 	if (!texture) {
 		SCE_DBG_LOG_ERROR("[JPEG] sceClibMspaceMalloc() returned NULL");
@@ -885,11 +880,6 @@ vita2d_texture *vita2d_load_JPEG_buffer(const void *buffer, unsigned long buffer
 		ret = sceJpegCsc(
 			texture_data, pYCbCr, ret, pFrameInfo.pitchWidth,
 			SCE_JPEG_PIXEL_RGBA8888, outputInfo.colorSpace & 0xFFFF);
-	}
-
-	if (ret < 0) {
-		SCE_DBG_LOG_ERROR("[JPEG] CSC failed: 0x%X", ret);
-		goto error_free_buf_hw_all_buf;
 	}
 
 	vita2d_texture *texture = sceClibMspaceMalloc(mspace_internal, sizeof(*texture));
