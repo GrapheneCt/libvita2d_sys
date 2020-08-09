@@ -1012,7 +1012,6 @@ int vita2d_fini()
 
 void vita2d_clib_pass_mspace(void* space) 
 {
-	sceDbgSetMinimumLogLevel(SCE_DBG_LOG_LEVEL_ERROR);
 	mspace_internal = space;
 }
 
