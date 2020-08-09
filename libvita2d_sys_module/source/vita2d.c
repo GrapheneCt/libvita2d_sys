@@ -15,12 +15,6 @@
 #include "vita2d_sys.h"
 #include "utils.h"
 
-#ifdef DEBUG_BUILD
-#  define DEBUG(...) sceClibPrintf(__VA_ARGS__)
-#else
-#  define DEBUG(...)
-#endif
-
 /* Defines */
 
 #define DISPLAY_COLOR_FORMAT		SCE_GXM_COLOR_FORMAT_A8B8G8R8
@@ -1020,7 +1014,6 @@ int vita2d_fini()
 
 void vita2d_clib_pass_mspace(void* space)
 {
-	sceDbgSetMinimumLogLevel(SCE_DBG_LOG_LEVEL_ERROR);
 	mspace_internal = space;
 }
 
@@ -1316,7 +1309,6 @@ int module_exit() {
 
 void _start() __attribute__((weak, alias("module_start")));
 int module_start(SceSize argc, void *args) {
-	sceClibPrintf("vita2d_sys module start, ver. 01.20\n");
-	sceDbgSetMinimumLogLevel(SCE_DBG_LOG_LEVEL_ERROR);
+	sceClibPrintf("vita2d_sys module start, ver. 01.21\n");
 	return SCE_KERNEL_START_SUCCESS;
 }
