@@ -43,7 +43,7 @@ vita2d_JPEG_ARM_decoder_initialize();
 vita2d_JPEG_ARM_decoder_finish();
 ```
 
-**- PNG textures can only be used in applications with newlib or sceLibc heap available**
+**- PNG textures can only be used in applications with newlib or SceLibc heap available**
 
 ## Initialization
 
