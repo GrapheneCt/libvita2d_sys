@@ -20,7 +20,6 @@
 #define DISPLAY_COLOR_FORMAT		SCE_GXM_COLOR_FORMAT_A8B8G8R8
 #define DISPLAY_PIXEL_FORMAT		SCE_DISPLAY_PIXELFORMAT_A8B8G8R8
 #define DISPLAY_BUFFER_COUNT		2
-#define DISPLAY_MAX_PENDING_SWAPS	2
 #define DEFAULT_TEMP_POOL_SIZE		(1 * 1024 * 1024)
 
 typedef struct SceSharedFbInfo { // size is 0x58
@@ -770,7 +769,7 @@ static int vita2d_init_internal(unsigned int temp_pool_size, unsigned int vdmRin
 		SceGxmInitializeParams gxm_init_params_internal;
 		sceClibMemset(&gxm_init_params_internal, 0, sizeof(SceGxmInitializeParams));
 		gxm_init_params_internal.flags = 0x0A;
-		gxm_init_params_internal.displayQueueMaxPendingCount = DISPLAY_MAX_PENDING_SWAPS;
+		gxm_init_params_internal.displayQueueMaxPendingCount = 2;
 		gxm_init_params_internal.parameterBufferSize = 0x200000;
 
 		err = sceGxmVshInitialize(&gxm_init_params_internal);
@@ -781,6 +780,7 @@ static int vita2d_init_internal(unsigned int temp_pool_size, unsigned int vdmRin
 		while (1) {
 			shfb_id = sceSharedFbOpen(1);
 			sceSharedFbGetInfo(shfb_id, &info);
+			sceKernelDelayThread(40);
 			if (info.curbuf == 1)
 				sceSharedFbClose(shfb_id);
 			else
@@ -1309,6 +1309,6 @@ int module_exit() {
 
 void _start() __attribute__((weak, alias("module_start")));
 int module_start(SceSize argc, void *args) {
-	sceClibPrintf("vita2d_sys module start, ver. 01.21\n");
+	sceClibPrintf("vita2d_sys module start, ver. 01.22\n");
 	return SCE_KERNEL_START_SUCCESS;
 }
