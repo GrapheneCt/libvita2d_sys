@@ -109,7 +109,8 @@ vita2d_pgf *vita2d_load_system_pgf(int numFonts, const vita2d_system_pgf_config 
 		return NULL;
 	}
 
-	SceFontStyle style = {0};
+	SceFontStyle style;
+	sceClibMemset(&style, 0x00, sizeof(style));
 	style.fontH = 10;
 	style.fontV = 10;
 
