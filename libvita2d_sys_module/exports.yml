@@ -17,7 +17,7 @@ vita2d_sys:
         - vita2d_init_with_msaa_and_memsize
         - vita2d_wait_rendering_done
         - vita2d_fini
-        - vita2d_clib_pass_mspace
+        - vita2d_set_heap_size
         - vita2d_clear_screen
         - vita2d_start_drawing
         - vita2d_start_drawing_advanced
@@ -96,6 +96,7 @@ vita2d_sys:
         - vita2d_load_system_pgf
         - vita2d_load_default_pgf
         - vita2d_load_custom_pgf
+        - vita2d_load_custom_pgf_buffer
         - vita2d_free_pgf
         - vita2d_pgf_draw_text
         - vita2d_pgf_draw_text_ls
@@ -107,11 +108,10 @@ vita2d_sys:
         - vita2d_load_system_pvf
         - vita2d_load_default_pvf
         - vita2d_load_custom_pvf
+        - vita2d_load_custom_pvf_buffer
         - vita2d_free_pvf
         - vita2d_pvf_draw_text
         - vita2d_pvf_draw_textf
-        - vita2d_pvf_draw_text_ls
-        - vita2d_pvf_draw_textf_ls
         - vita2d_pvf_text_dimensions
         - vita2d_pvf_text_width
         - vita2d_pvf_text_height
@@ -120,3 +120,5 @@ vita2d_sys:
         - vita2d_pvf_embolden_rate
         - vita2d_pvf_skew_rate
         - vita2d_pvf_char_size
+        - vita2d_pvf_linespace
+        - vita2d_pvf_charspace
