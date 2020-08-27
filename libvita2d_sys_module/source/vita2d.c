@@ -14,9 +14,11 @@
 #include <psp2/libdbg.h>
 #include "vita2d_sys.h"
 #include "utils.h"
+#include "heap.h"
 
 /* Defines */
 
+#define DEFAULT_HEAP_SIZE			1 * 1024 * 1024;
 #define DISPLAY_COLOR_FORMAT		SCE_GXM_COLOR_FORMAT_A8B8G8R8
 #define DISPLAY_PIXEL_FORMAT		SCE_DISPLAY_PIXELFORMAT_A8B8G8R8
 #define DISPLAY_BUFFER_COUNT		2
@@ -84,11 +86,12 @@ static float clear_color[4] = { 0.0f, 0.0f, 0.0f, 1.0f };
 static unsigned int clear_color_u = 0xFF000000;
 static int clip_rect_x_min = 0;
 static int clip_rect_y_min = 0;
-static int clip_rect_x_max = 960; //<- change this
-static int clip_rect_y_max = 544; //<- change this
+static int clip_rect_x_max = 960;
+static int clip_rect_y_max = 544;
 static int vblank_wait = 1;
 static int drawing = 0;
 static int clipping_enabled = 0;
+static unsigned int heap_size = DEFAULT_HEAP_SIZE;
 
 static SceUID renderTargetMemUid;
 static SceUID vdmRingBufferUid;
@@ -136,8 +139,7 @@ static vita2d_clear_vertex *clearVertices = NULL;
 static uint16_t *linearIndices = NULL;
 
 /* Shared with other .c */
-SceUID async_io[MAX_ASYNC_IO_HANDLES];
-void* mspace_internal;
+void* heap_internal;
 int system_mode_flag = 1;
 int pgf_module_was_loaded = 10;
 float _vita2d_ortho_matrix[4 * 4];
@@ -173,15 +175,15 @@ static unsigned int pool_size = 0;
 
 static void *patcher_host_alloc(void *user_data, uint32_t size)
 {
-	void* pMem = sceClibMspaceMalloc(mspace_internal, size);
+	void* pMem = heap_alloc_heap_memory(heap_internal, size);
 	if (pMem == NULL)
-		SCE_DBG_LOG_ERROR("patcher_host_alloc(): sceClibMspaceMalloc() returned NULL");
+		SCE_DBG_LOG_ERROR("patcher_host_alloc(): heap_alloc_heap_memory() returned NULL");
 	return pMem;
 }
 
 static void patcher_host_free(void *user_data, void *mem)
 {
-	sceClibMspaceFree(mspace_internal, mem);
+	heap_free_heap_memory(heap_internal, mem);
 }
 
 static void _vita2d_free_fragment_programs(vita2d_fragment_programs *out)
@@ -298,7 +300,7 @@ static int vita2d_init_internal_common(unsigned int temp_pool_size, unsigned int
 		&fragmentUsseRingBufferOffset);
 
 	sceClibMemset(&contextParams, 0, sizeof(SceGxmContextParams));
-	contextParams.hostMem = sceClibMspaceMalloc(mspace_internal, SCE_GXM_MINIMUM_CONTEXT_HOST_MEM_SIZE);
+	contextParams.hostMem = heap_alloc_heap_memory(heap_internal, SCE_GXM_MINIMUM_CONTEXT_HOST_MEM_SIZE);
 	contextParams.hostMemSize = SCE_GXM_MINIMUM_CONTEXT_HOST_MEM_SIZE;
 	contextParams.vdmRingBufferMem = vdmRingBuffer;
 	contextParams.vdmRingBufferMemSize = vdmRingBufferMemsize;
@@ -758,6 +760,8 @@ static int vita2d_init_internal(unsigned int temp_pool_size, unsigned int vdmRin
 		return 1;
 	}
 
+	heap_internal = heap_create_heap("vita2d_heap", heap_size, HEAP_AUTO_EXTEND, NULL);
+
 	err = sceKernelIsGameBudget();
 	if (err == 1)
 		system_mode_flag = 0;
@@ -971,7 +975,7 @@ int vita2d_fini()
 	gpu_free(fragmentRingBufferUid);
 	gpu_free(vertexRingBufferUid);
 	gpu_free(vdmRingBufferUid);
-	sceClibMspaceFree(mspace_internal, contextParams.hostMem);
+	heap_free_heap_memory(heap_internal, contextParams.hostMem);
 
 	gpu_free(poolUid);
 
@@ -1007,14 +1011,16 @@ int vita2d_fini()
 			SCE_DBG_LOG_ERROR("sceSharedFbClose(): 0x%X", err);
 	}
 
+	heap_delete_heap(heap_internal);
+
 	vita2d_initialized = 0;
 
 	return 1;
 }
 
-void vita2d_clib_pass_mspace(void* space)
+void vita2d_set_heap_size(unsigned int size)
 {
-	mspace_internal = space;
+	heap_size = size;
 }
 
 void vita2d_clear_screen()
@@ -1296,7 +1302,6 @@ void vita2d_set_blend_mode_add(int enable)
 	_vita2d_textureTintFragmentProgram = in->textureTint;
 }
 
-
 int module_stop(SceSize argc, const void *args) {
 	sceClibPrintf("vita2d_sys module stop\n");
 	return SCE_KERNEL_STOP_SUCCESS;
@@ -1309,6 +1314,6 @@ int module_exit() {
 
 void _start() __attribute__((weak, alias("module_start")));
 int module_start(SceSize argc, void *args) {
-	sceClibPrintf("vita2d_sys module start, ver. 01.22\n");
+	sceClibPrintf("vita2d_sys module start, ver. 01.30\n");
 	return SCE_KERNEL_START_SUCCESS;
 }

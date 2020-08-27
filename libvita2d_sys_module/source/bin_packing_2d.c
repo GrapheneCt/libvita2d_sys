@@ -1,14 +1,15 @@
 #include <psp2/kernel/clib.h>
 #include <psp2/libdbg.h>
 #include "bin_packing_2d.h"
+#include "heap.h"
 
-extern void* mspace_internal;
+extern void* heap_internal;
 
 bp2d_node *bp2d_create(const bp2d_rectangle *rect)
 {
-	bp2d_node *node = sceClibMspaceMalloc(mspace_internal, sizeof(*node));
+	bp2d_node *node = heap_alloc_heap_memory(heap_internal, sizeof(*node));
 	if (!node) {
-		SCE_DBG_LOG_ERROR("[BP2D] sceClibMspaceMalloc() returned NULL");
+		SCE_DBG_LOG_ERROR("[BP2D] heap_alloc_heap_memory() returned NULL");
 		return NULL;
 	}
 
@@ -32,7 +33,7 @@ void bp2d_free(bp2d_node *node)
 		if (node->right) {
 			bp2d_free(node->right);
 		}
-		sceClibMspaceFree(mspace_internal, node);
+		heap_free_heap_memory(heap_internal, node);
 	}
 }
 

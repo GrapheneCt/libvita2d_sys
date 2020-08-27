@@ -7,16 +7,17 @@
 
 #include "fios2ac.h"
 #include "utils.h"
+#include "heap.h"
 
-extern void* mspace_internal;
+extern void* heap_internal;
 
 vita2d_texture *vita2d_load_additional_GXT(vita2d_texture *initial_tex, int texture_index)
 {
 	int ret;
 
-	vita2d_texture *texture = sceClibMspaceMalloc(mspace_internal, sizeof(*texture));
+	vita2d_texture *texture = heap_alloc_heap_memory(heap_internal, sizeof(*texture));
 	if (!texture) {
-		SCE_DBG_LOG_ERROR("[GXT] sceClibMspaceMalloc() returned NULL");
+		SCE_DBG_LOG_ERROR("[GXT] heap_alloc_heap_memory() returned NULL");
 		goto exit_error;
 	}
 
@@ -42,9 +43,9 @@ vita2d_texture *vita2d_load_GXT_file_FIOS2(char* mountedFilePath, int texture_in
 {
 	int ret;
 
-	vita2d_texture *texture = sceClibMspaceMalloc(mspace_internal, sizeof(*texture));
+	vita2d_texture *texture = heap_alloc_heap_memory(heap_internal, sizeof(*texture));
 	if (!texture) {
-		SCE_DBG_LOG_ERROR("[GXT] sceClibMspaceMalloc() returned NULL");
+		SCE_DBG_LOG_ERROR("[GXT] heap_alloc_heap_memory() returned NULL");
 		goto exit_error;
 	}
 
@@ -120,9 +121,9 @@ vita2d_texture *vita2d_load_GXT_file(char *filename, int texture_index, int io_t
 	if (io_type == 1)
 		return vita2d_load_GXT_file_FIOS2(filename, texture_index);
 
-	vita2d_texture *texture = sceClibMspaceMalloc(mspace_internal, sizeof(*texture));
+	vita2d_texture *texture = heap_alloc_heap_memory(heap_internal, sizeof(*texture));
 	if (!texture) {
-		SCE_DBG_LOG_ERROR("[GXT] sceClibMspaceMalloc() returned NULL");
+		SCE_DBG_LOG_ERROR("[GXT] heap_alloc_heap_memory() returned NULL");
 		goto exit_error;
 	}
 
@@ -192,5 +193,5 @@ exit_error:
 
 void vita2d_free_additional_GXT(vita2d_texture *tex)
 {
-	sceClibMspaceFree(mspace_internal, tex);
+	heap_free_heap_memory(heap_internal, tex);
 }
