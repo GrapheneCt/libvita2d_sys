@@ -1,22 +1,23 @@
 #include <psp2/kernel/iofilemgr.h>
 #include <psp2/kernel/clib.h>
 #include <psp2/gxm.h>
-#include <psp2/gxt.h>
+#include "gxt.h"
 #include <psp2/libdbg.h>
 #include "vita2d_sys.h"
 
 #include "fios2ac.h"
 #include "utils.h"
+#include "heap.h"
 
-extern void* mspace_internal;
+extern void* heap_internal;
 
 vita2d_texture *vita2d_load_additional_GXT(vita2d_texture *initial_tex, int texture_index)
 {
 	int ret;
 
-	vita2d_texture *texture = sceClibMspaceMalloc(mspace_internal, sizeof(*texture));
+	vita2d_texture *texture = heap_alloc_heap_memory(heap_internal, sizeof(*texture));
 	if (!texture) {
-		SCE_DBG_LOG_ERROR("[GXT] sceClibMspaceMalloc() returned NULL");
+		SCE_DBG_LOG_ERROR("[GXT] heap_alloc_heap_memory() returned NULL");
 		goto exit_error;
 	}
 
@@ -42,11 +43,9 @@ vita2d_texture *vita2d_load_GXT_file_FIOS2(char* mountedFilePath, int texture_in
 {
 	int ret;
 
-	SceKernelMemBlockType mem_type = vita2d_texture_get_alloc_memblock_type();
-
-	vita2d_texture *texture = sceClibMspaceMalloc(mspace_internal, sizeof(*texture));
+	vita2d_texture *texture = heap_alloc_heap_memory(heap_internal, sizeof(*texture));
 	if (!texture) {
-		SCE_DBG_LOG_ERROR("[GXT] sceClibMspaceMalloc() returned NULL");
+		SCE_DBG_LOG_ERROR("[GXT] heap_alloc_heap_memory() returned NULL");
 		goto exit_error;
 	}
 
@@ -54,9 +53,9 @@ vita2d_texture *vita2d_load_GXT_file_FIOS2(char* mountedFilePath, int texture_in
 
 	SceFiosStat fios_stat;
 	sceFiosStatSync(NULL, mountedFilePath, &fios_stat);
-	unsigned int size = ALIGN((SceSize)fios_stat.fileSize, mem_type == SCE_KERNEL_MEMBLOCK_TYPE_USER_RW_UNCACHE ? 4 * 1024 : 256 * 1024);
+	unsigned int size = ALIGN((SceSize)fios_stat.fileSize, 4 * 1024);
 
-	SceUID tex_data_uid = sceKernelAllocMemBlock("gpu_mem", mem_type, size, NULL);
+	SceUID tex_data_uid = sceKernelAllocMemBlock("gpu_mem", SCE_KERNEL_MEMBLOCK_TYPE_USER_RW_UNCACHE, size, NULL);
 
 	texture->data_UID = tex_data_uid;
 
@@ -64,7 +63,7 @@ vita2d_texture *vita2d_load_GXT_file_FIOS2(char* mountedFilePath, int texture_in
 	if (sceKernelGetMemBlockBase(tex_data_uid, &texture_data) < 0)
 		goto exit_error_free;
 
-	ret = sceGxmMapMemory(texture_data, size, SCE_GXM_MEMORY_ATTRIB_READ);
+	ret = sceGxmMapMemory(texture_data, size, SCE_GXM_MEMORY_ATTRIB_READ | SCE_GXM_MEMORY_ATTRIB_WRITE);
 
 	if (ret < 0) {
 		SCE_DBG_LOG_ERROR("[GXT] sceGxmMapMemory(): 0x%X", ret);
@@ -122,11 +121,9 @@ vita2d_texture *vita2d_load_GXT_file(char *filename, int texture_index, int io_t
 	if (io_type == 1)
 		return vita2d_load_GXT_file_FIOS2(filename, texture_index);
 
-	SceKernelMemBlockType mem_type = vita2d_texture_get_alloc_memblock_type();
-
-	vita2d_texture *texture = sceClibMspaceMalloc(mspace_internal, sizeof(*texture));
+	vita2d_texture *texture = heap_alloc_heap_memory(heap_internal, sizeof(*texture));
 	if (!texture) {
-		SCE_DBG_LOG_ERROR("[GXT] sceClibMspaceMalloc() returned NULL");
+		SCE_DBG_LOG_ERROR("[GXT] heap_alloc_heap_memory() returned NULL");
 		goto exit_error;
 	}
 
@@ -134,9 +131,9 @@ vita2d_texture *vita2d_load_GXT_file(char *filename, int texture_index, int io_t
 
 	SceIoStat file_stat;
 	sceIoGetstat(filename, &file_stat);
-	unsigned int size = ALIGN(file_stat.st_size, mem_type == SCE_KERNEL_MEMBLOCK_TYPE_USER_RW_UNCACHE ? 4 * 1024 : 256 * 1024);
+	unsigned int size = ALIGN(file_stat.st_size, 4 * 1024);
 
-	SceUID tex_data_uid = sceKernelAllocMemBlock("gpu_mem", mem_type, size, NULL);
+	SceUID tex_data_uid = sceKernelAllocMemBlock("gpu_mem", SCE_KERNEL_MEMBLOCK_TYPE_USER_RW_UNCACHE, size, NULL);
 
 	texture->data_UID = tex_data_uid;
 
@@ -144,7 +141,7 @@ vita2d_texture *vita2d_load_GXT_file(char *filename, int texture_index, int io_t
 	if (sceKernelGetMemBlockBase(tex_data_uid, &texture_data) < 0)
 		goto exit_error_free;
 
-	ret = sceGxmMapMemory(texture_data, size, SCE_GXM_MEMORY_ATTRIB_READ);
+	ret = sceGxmMapMemory(texture_data, size, SCE_GXM_MEMORY_ATTRIB_READ | SCE_GXM_MEMORY_ATTRIB_WRITE);
 
 	if (ret < 0) {
 		SCE_DBG_LOG_ERROR("[GXT] sceGxmMapMemory(): 0x%X", ret);
@@ -196,5 +193,5 @@ exit_error:
 
 void vita2d_free_additional_GXT(vita2d_texture *tex)
 {
-	sceClibMspaceFree(mspace_internal, tex);
+	heap_free_heap_memory(heap_internal, tex);
 }

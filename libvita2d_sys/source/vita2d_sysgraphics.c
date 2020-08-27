@@ -1,15 +1,16 @@
 #include <psp2/kernel/clib.h>
-
 #include "vita2d_sys.h"
 
-extern void* mspace_internal;
+#include "heap.h"
+
+extern void* heap_internal;
 
 static unsigned int uid_modifier = 0, highlight_iterator = 0;
 static SceBool highlight_up = SCE_TRUE;
 
 vita2d_sys_widget* vita2d_sys_create_widget_button(vita2d_texture* texture, vita2d_pvf* font, float initX, float initY, float fontDeltaX, float fontDeltaY, const char* text)
 {
-	vita2d_sys_widget* widget = sceClibMspaceMalloc(mspace_internal, sizeof(*widget));
+	vita2d_sys_widget* widget = heap_alloc_heap_memory(heap_internal, sizeof(*widget));
 	if (!widget)
 		return NULL;
 
@@ -91,5 +92,5 @@ void vita2d_sys_draw_widget(vita2d_sys_widget* widget)
 
 void vita2d_sys_delete_widget(vita2d_sys_widget* widget)
 {
-	sceClibMspaceFree(mspace_internal, widget);
+	heap_free_heap_memory(heap_internal, widget);
 }

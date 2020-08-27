@@ -4,13 +4,15 @@
 #include <psp2/libdbg.h>
 #include <math.h>
 #include "vita2d_sys.h"
+
 #include "utils.h"
 #include "shared.h"
+#include "heap.h"
 
 #define GXM_TEX_MAX_SIZE 4096
 static SceKernelMemBlockType MemBlockType = SCE_KERNEL_MEMBLOCK_TYPE_USER_CDRAM_RW;
 
-extern void* mspace_internal;
+extern void* heap_internal;
 
 static int tex_format_to_bytespp(SceGxmTextureFormat format)
 {
@@ -62,9 +64,9 @@ static vita2d_texture *_vita2d_create_empty_texture_format_advanced(unsigned int
 		return NULL;
 	}
 
-	vita2d_texture *texture = sceClibMspaceMalloc(mspace_internal, sizeof(*texture));
+	vita2d_texture *texture = heap_alloc_heap_memory(heap_internal, sizeof(*texture));
 	if (!texture) {
-		SCE_DBG_LOG_ERROR("[TEX] sceClibMspaceMalloc() returned NULL");
+		SCE_DBG_LOG_ERROR("[TEX] heap_alloc_heap_memory() returned NULL");
 		return NULL;
 	}
 
@@ -80,7 +82,7 @@ static vita2d_texture *_vita2d_create_empty_texture_format_advanced(unsigned int
 
 	if (!texture_data) {
 		SCE_DBG_LOG_ERROR("[TEX] gpu_alloc() returned NULL");
-		sceClibMspaceFree(mspace_internal, texture);
+		heap_free_heap_memory(heap_internal, texture);
 		return NULL;
 	}
 
@@ -225,7 +227,7 @@ void vita2d_free_texture(vita2d_texture *texture)
 			gpu_free(texture->palette_UID);
 		}
 		gpu_free(texture->data_UID);
-		sceClibMspaceFree(mspace_internal, texture);
+		heap_free_heap_memory(heap_internal, texture);
 	}
 }
 

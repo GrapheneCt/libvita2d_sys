@@ -1,14 +1,15 @@
 #include <psp2/kernel/clib.h>
 #include <psp2/libdbg.h>
 #include "texture_atlas.h"
+#include "heap.h"
 
-extern void* mspace_internal;
+extern void* heap_internal;
 
 texture_atlas *texture_atlas_create(int width, int height, SceGxmTextureFormat format)
 {
-	texture_atlas *atlas = sceClibMspaceMalloc(mspace_internal, sizeof(*atlas));
+	texture_atlas *atlas = heap_alloc_heap_memory(heap_internal, sizeof(*atlas));
 	if (!atlas) {
-		SCE_DBG_LOG_ERROR("[ATLAS] sceClibMspaceMalloc() returned NULL");
+		SCE_DBG_LOG_ERROR("[ATLAS] heap_alloc_heap_memory() returned NULL");
 		return NULL;
 	}
 
@@ -23,7 +24,7 @@ texture_atlas *texture_atlas_create(int width, int height, SceGxmTextureFormat f
 							    format);
 	if (!atlas->texture) {
 		SCE_DBG_LOG_ERROR("[ATLAS] vita2d_create_empty_texture_format() returned NULL");
-		sceClibMspaceFree(mspace_internal, atlas);
+		heap_free_heap_memory(heap_internal, atlas);
 		return NULL;
 	}
 
@@ -42,7 +43,7 @@ void texture_atlas_free(texture_atlas *atlas)
 	vita2d_free_texture(atlas->texture);
 	bp2d_free(atlas->bp_root);
 	int_htab_free(atlas->htab);
-	sceClibMspaceFree(mspace_internal, atlas);
+	heap_free_heap_memory(heap_internal, atlas);
 }
 
 int texture_atlas_insert(texture_atlas *atlas, unsigned int character,
@@ -56,7 +57,7 @@ int texture_atlas_insert(texture_atlas *atlas, unsigned int character,
 	if (!bp2d_insert(atlas->bp_root, size, inserted_pos, &new_node))
 		return 0;
 
-	entry = sceClibMspaceMalloc(mspace_internal, sizeof(*entry));
+	entry = heap_alloc_heap_memory(heap_internal, sizeof(*entry));
 
 	entry->rect.x = inserted_pos->x;
 	entry->rect.y = inserted_pos->y;

@@ -5,10 +5,11 @@
 #include "vita2d_sys.h"
 
 #include "fios2ac.h"
+#include "heap.h"
 
 #define BMP_SIGNATURE (0x4D42)
 
-extern void* mspace_internal;
+extern void* heap_internal;
 
 typedef struct {
 	unsigned short	bfType;
@@ -45,9 +46,9 @@ static vita2d_texture *_vita2d_load_BMP_generic(
 		row_stride += 4-(row_stride%4);
 	}
 
-	void *buffer = sceClibMspaceMalloc(mspace_internal, row_stride);
+	void *buffer = heap_alloc_heap_memory(heap_internal, row_stride);
 	if (!buffer) {
-		SCE_DBG_LOG_ERROR("[BMP] sceClibMspaceMalloc() returned NULL");
+		SCE_DBG_LOG_ERROR("[BMP] heap_alloc_heap_memory() returned NULL");
 		return NULL;
 	}
 
@@ -57,7 +58,7 @@ static vita2d_texture *_vita2d_load_BMP_generic(
 
 	if (!texture) {
 		SCE_DBG_LOG_ERROR("[BMP] vita2d_create_empty_texture() returned NULL");
-		sceClibMspaceFree(mspace_internal, buffer);
+		heap_free_heap_memory(heap_internal, buffer);
 		return NULL;
 	}
 
@@ -99,7 +100,7 @@ static vita2d_texture *_vita2d_load_BMP_generic(
 		}
 	}
 
-	sceClibMspaceFree(mspace_internal, buffer);
+	heap_free_heap_memory(heap_internal, buffer);
 
 	return texture;
 }
