@@ -45,19 +45,11 @@ vita2d_JPEG_ARM_decoder_finish();
 
 **- PNG textures can only be used in applications with newlib or SceLibc heap available**
 
-## Initialization
+## Changing internal heap size
 
-To initialize vita2d_sys in your application following must be done. Minimum value for CLIB_HEAP_SIZE is 1MiB.
+Default internal vita2d_sys heap size is set to 1MB. It can be changed with:
 ```
-void *mspace;
-void *clibm_base;
-SceUID clib_heap = sceKernelAllocMemBlock("ClibHeap", SCE_KERNEL_MEMBLOCK_TYPE_USER_RW_UNCACHE, CLIB_HEAP_SIZE, NULL);
-sceKernelGetMemBlockBase(clib_heap, &clibm_base);
-mspace = sceClibMspaceCreate(clibm_base, CLIB_HEAP_SIZE);
-
-vita2d_clib_pass_mspace(mspace);
-
-vita2d_init();
+vita2d_set_heap_size(VITA2D_HEAP_SIZE);
 ```
 
 ## Drawing process
