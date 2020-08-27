@@ -233,6 +233,8 @@ void vita2d_sys_widget_set_highlight_max(void);
 /* DEPRECATED, do not use in new projects */
 
 void vita2d_clib_pass_mspace(void* space);
+int vita2d_pvf_draw_text_ls(vita2d_pvf *font, int x, int y, float linespace, unsigned int color, float scale, const char *text);
+int vita2d_pvf_draw_textf_ls(vita2d_pvf *font, int x, int y, float linespace, unsigned int color, float scale, const char *text, ...);
 
 #ifdef __cplusplus
 }
