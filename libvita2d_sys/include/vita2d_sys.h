@@ -63,7 +63,6 @@ typedef struct vita2d_system_pvf_config {
 	int (*in_font_group)(unsigned int c);
 } vita2d_system_pvf_config;
 
-typedef struct vita2d_font vita2d_font;
 typedef struct vita2d_pgf vita2d_pgf;
 typedef struct vita2d_pvf vita2d_pvf;
 
