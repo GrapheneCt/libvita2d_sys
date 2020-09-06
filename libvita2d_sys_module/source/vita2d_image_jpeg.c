@@ -6,10 +6,10 @@
 #include <psp2/kernel/clib.h> 
 #include <psp2/kernel/dmac.h> 
 #include <psp2/libdbg.h>
+#include <psp2/fios2.h>
 #include "vita2d_sys.h"
 
 #include "utils.h"
-#include "fios2ac.h"
 #include "heap.h"
 
 #define GXM_TEX_MAX_SIZE 4096
@@ -30,7 +30,7 @@
 #define unlikely(x)	__builtin_expect(!!(x), 0)
 #define CSC_FIX(x)	((int)(x * 1024 + 0.5))
 
-extern void* heap_internal;
+extern void* vita2d_heap_internal;
 
 static int decoder_initialized = 0, decoder_arm_initialized = 0;
 
@@ -651,7 +651,7 @@ vita2d_texture *vita2d_load_JPEG_file(char *filename, int io_type, int useMainMe
 			SCE_JPEG_PIXEL_RGBA8888, outputInfo.colorSpace & 0xFFFF);
 	}
 
-	vita2d_texture *texture = heap_alloc_heap_memory(heap_internal, sizeof(*texture));
+	vita2d_texture *texture = heap_alloc_heap_memory(vita2d_heap_internal, sizeof(*texture));
 	if (!texture) {
 		SCE_DBG_LOG_ERROR("[JPEG] heap_alloc_heap_memory() returned NULL");
 		goto error_free_file_hw_all_buf;
@@ -884,7 +884,7 @@ vita2d_texture *vita2d_load_JPEG_buffer(const void *buffer, unsigned long buffer
 			SCE_JPEG_PIXEL_RGBA8888, outputInfo.colorSpace & 0xFFFF);
 	}
 
-	vita2d_texture *texture = heap_alloc_heap_memory(heap_internal, sizeof(*texture));
+	vita2d_texture *texture = heap_alloc_heap_memory(vita2d_heap_internal, sizeof(*texture));
 	if (!texture) {
 		SCE_DBG_LOG_ERROR("[JPEG] heap_alloc_heap_memory() returned NULL");
 		goto error_free_buf_hw_all_buf;
@@ -1105,7 +1105,7 @@ vita2d_texture *vita2d_load_JPEG_ARM_file(char *filename, int io_type, int useDo
 		sceKernelFreeMemBlock(streamBufMemblock);
 	}
 
-	vita2d_texture *texture = heap_alloc_heap_memory(heap_internal, sizeof(*texture));
+	vita2d_texture *texture = heap_alloc_heap_memory(vita2d_heap_internal, sizeof(*texture));
 	if (!texture) {
 		SCE_DBG_LOG_ERROR("[JPEG] heap_alloc_heap_memory() returned NULL");
 		goto error_free_file_both_buf;
@@ -1268,7 +1268,7 @@ vita2d_texture *vita2d_load_JPEG_ARM_buffer(const void *buffer, unsigned long bu
 		goto error_free_buf_dec_buf;
 	}
 
-	vita2d_texture *texture = heap_alloc_heap_memory(heap_internal, sizeof(*texture));
+	vita2d_texture *texture = heap_alloc_heap_memory(vita2d_heap_internal, sizeof(*texture));
 	if (!texture) {
 		SCE_DBG_LOG_ERROR("[JPEG] heap_alloc_heap_memory() returned NULL");
 		goto error_free_buf_dec_buf;

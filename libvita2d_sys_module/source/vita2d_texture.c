@@ -12,7 +12,7 @@
 #define GXM_TEX_MAX_SIZE 4096
 static SceKernelMemBlockType MemBlockType = SCE_KERNEL_MEMBLOCK_TYPE_USER_CDRAM_RW;
 
-extern void* heap_internal;
+extern void* vita2d_heap_internal;
 
 static int tex_format_to_bytespp(SceGxmTextureFormat format)
 {
@@ -64,7 +64,7 @@ static vita2d_texture *_vita2d_create_empty_texture_format_advanced(unsigned int
 		return NULL;
 	}
 
-	vita2d_texture *texture = heap_alloc_heap_memory(heap_internal, sizeof(*texture));
+	vita2d_texture *texture = heap_alloc_heap_memory(vita2d_heap_internal, sizeof(*texture));
 	if (!texture) {
 		SCE_DBG_LOG_ERROR("[TEX] heap_alloc_heap_memory() returned NULL");
 		return NULL;
@@ -82,7 +82,7 @@ static vita2d_texture *_vita2d_create_empty_texture_format_advanced(unsigned int
 
 	if (!texture_data) {
 		SCE_DBG_LOG_ERROR("[TEX] gpu_alloc() returned NULL");
-		heap_free_heap_memory(heap_internal, texture);
+		heap_free_heap_memory(vita2d_heap_internal, texture);
 		return NULL;
 	}
 
@@ -99,7 +99,7 @@ static vita2d_texture *_vita2d_create_empty_texture_format_advanced(unsigned int
 		format,
 		w,
 		h,
-		0);
+		1);
 
 	if ((format & 0x9f000000U) == SCE_GXM_TEXTURE_BASE_FORMAT_P8) {
 
@@ -226,8 +226,10 @@ void vita2d_free_texture(vita2d_texture *texture)
 		if (texture->palette_UID) {
 			gpu_free(texture->palette_UID);
 		}
-		gpu_free(texture->data_UID);
-		heap_free_heap_memory(heap_internal, texture);
+		if (texture->data_UID) {
+			gpu_free(texture->data_UID);
+		}
+		heap_free_heap_memory(vita2d_heap_internal, texture);
 	}
 }
 

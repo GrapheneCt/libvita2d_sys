@@ -13,6 +13,7 @@
 #include <psp2/scebase.h>
 #include <psp2/libdbg.h>
 #include "vita2d_sys.h"
+
 #include "utils.h"
 #include "heap.h"
 
@@ -139,7 +140,7 @@ static vita2d_clear_vertex *clearVertices = NULL;
 static uint16_t *linearIndices = NULL;
 
 /* Shared with other .c */
-void* heap_internal;
+void* vita2d_heap_internal;
 int system_mode_flag = 1;
 int pgf_module_was_loaded = 10;
 float _vita2d_ortho_matrix[4 * 4];
@@ -175,7 +176,7 @@ static unsigned int pool_size = 0;
 
 static void *patcher_host_alloc(void *user_data, uint32_t size)
 {
-	void* pMem = heap_alloc_heap_memory(heap_internal, size);
+	void* pMem = heap_alloc_heap_memory(vita2d_heap_internal, size);
 	if (pMem == NULL)
 		SCE_DBG_LOG_ERROR("patcher_host_alloc(): heap_alloc_heap_memory() returned NULL");
 	return pMem;
@@ -183,7 +184,7 @@ static void *patcher_host_alloc(void *user_data, uint32_t size)
 
 static void patcher_host_free(void *user_data, void *mem)
 {
-	heap_free_heap_memory(heap_internal, mem);
+	heap_free_heap_memory(vita2d_heap_internal, mem);
 }
 
 static void _vita2d_free_fragment_programs(vita2d_fragment_programs *out)
@@ -300,7 +301,7 @@ static int vita2d_init_internal_common(unsigned int temp_pool_size, unsigned int
 		&fragmentUsseRingBufferOffset);
 
 	sceClibMemset(&contextParams, 0, sizeof(SceGxmContextParams));
-	contextParams.hostMem = heap_alloc_heap_memory(heap_internal, SCE_GXM_MINIMUM_CONTEXT_HOST_MEM_SIZE);
+	contextParams.hostMem = heap_alloc_heap_memory(vita2d_heap_internal, SCE_GXM_MINIMUM_CONTEXT_HOST_MEM_SIZE);
 	contextParams.hostMemSize = SCE_GXM_MINIMUM_CONTEXT_HOST_MEM_SIZE;
 	contextParams.vdmRingBufferMem = vdmRingBuffer;
 	contextParams.vdmRingBufferMemSize = vdmRingBufferMemsize;
@@ -760,7 +761,7 @@ static int vita2d_init_internal(unsigned int temp_pool_size, unsigned int vdmRin
 		return 1;
 	}
 
-	heap_internal = heap_create_heap("vita2d_heap", heap_size, HEAP_AUTO_EXTEND, NULL);
+	vita2d_heap_internal = heap_create_heap("vita2d_heap", heap_size, HEAP_AUTO_EXTEND, NULL);
 
 	err = sceKernelIsGameBudget();
 	if (err == 1)
@@ -975,7 +976,7 @@ int vita2d_fini()
 	gpu_free(fragmentRingBufferUid);
 	gpu_free(vertexRingBufferUid);
 	gpu_free(vdmRingBufferUid);
-	heap_free_heap_memory(heap_internal, contextParams.hostMem);
+	heap_free_heap_memory(vita2d_heap_internal, contextParams.hostMem);
 
 	gpu_free(poolUid);
 
@@ -1011,7 +1012,7 @@ int vita2d_fini()
 			SCE_DBG_LOG_ERROR("sceSharedFbClose(): 0x%X", err);
 	}
 
-	heap_delete_heap(heap_internal);
+	heap_delete_heap(vita2d_heap_internal);
 
 	vita2d_initialized = 0;
 
@@ -1314,6 +1315,6 @@ int module_exit() {
 
 void _start() __attribute__((weak, alias("module_start")));
 int module_start(SceSize argc, void *args) {
-	sceClibPrintf("vita2d_sys module start, ver. 01.30\n");
+	sceClibPrintf("vita2d_sys module start, ver. 01.31\n");
 	return SCE_KERNEL_START_SUCCESS;
 }
