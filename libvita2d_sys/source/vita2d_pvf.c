@@ -232,7 +232,7 @@ vita2d_pvf *vita2d_load_custom_pvf(const char *path, float hSize, float vSize)
 	return font;
 }
 
-vita2d_pvf *vita2d_load_custom_pvf_buffer(void* buf, float hSize, float vSize)
+vita2d_pvf *vita2d_load_custom_pvf_buffer(void* buf, SceSize bufSize, float hSize, float vSize)
 {
 	ScePvfError error;
 	vita2d_pvf *font = vita2d_load_pvf_pre(1);
@@ -249,7 +249,7 @@ vita2d_pvf *vita2d_load_custom_pvf_buffer(void* buf, float hSize, float vSize)
 		return NULL;
 	}
 
-	ScePvfFontId font_handle = scePvfOpenUserMemory(font->lib_handle, buf, 1, &error);
+	ScePvfFontId font_handle = scePvfOpenUserMemory(font->lib_handle, buf, bufSize, &error);
 	if (error != 0) {
 		SCE_DBG_LOG_ERROR("[PVF] scePvfOpenUserMemory(): 0x%X", error);
 		scePvfDoneLib(font->lib_handle);
