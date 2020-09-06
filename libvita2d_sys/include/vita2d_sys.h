@@ -186,11 +186,14 @@ vita2d_texture *vita2d_load_GXT_file(char *filename, int texture_index, int io_t
 vita2d_texture *vita2d_load_additional_GXT(vita2d_texture *initial_tex, int texture_index);
 void vita2d_free_additional_GXT(vita2d_texture *tex);
 
+vita2d_texture *vita2d_load_GIM_file(char *filename, int io_type);
+vita2d_texture *vita2d_load_GIM_buffer(void *buffer);
+
 /* PGF functions are weak imports at the moment, they have to be resolved manually */
 vita2d_pgf *vita2d_load_system_pgf(int numFonts, const vita2d_system_pgf_config *configs);
 vita2d_pgf *vita2d_load_default_pgf();
 vita2d_pgf *vita2d_load_custom_pgf(const char *path);
-vita2d_pgf *vita2d_load_custom_pgf_buffer(void* buf);
+vita2d_pgf *vita2d_load_custom_pgf_buffer(void* buf, SceSize bufSize);
 void vita2d_free_pgf(vita2d_pgf *font);
 int vita2d_pgf_draw_text(vita2d_pgf *font, int x, int y, unsigned int color, float scale, const char *text);
 int vita2d_pgf_draw_text_ls(vita2d_pgf *font, int x, int y, float linespace, unsigned int color, float scale, const char *text);
@@ -203,7 +206,7 @@ int vita2d_pgf_text_height(vita2d_pgf *font, float scale, const char *text);
 vita2d_pvf *vita2d_load_system_pvf(int numFonts, const vita2d_system_pvf_config *configs, float hSize, float vSize);
 vita2d_pvf *vita2d_load_default_pvf();
 vita2d_pvf *vita2d_load_custom_pvf(const char *path, float hSize, float vSize);
-vita2d_pvf *vita2d_load_custom_pvf_buffer(void* buf, float hSize, float vSize);
+vita2d_pvf *vita2d_load_custom_pvf_buffer(void* buf, SceSize bufSize, float hSize, float vSize);
 void vita2d_free_pvf(vita2d_pvf *font);
 int vita2d_pvf_draw_text(vita2d_pvf *font, int x, int y, unsigned int color, float scale, const char *text);
 int vita2d_pvf_draw_textf(vita2d_pvf *font, int x, int y, unsigned int color, float scale, const char *text, ...);
