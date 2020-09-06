@@ -1,6 +1,9 @@
 #include <math.h>
+#include <psp2/kernel/iofilemgr.h>
 #include <psp2/kernel/clib.h>
 #include <psp2/libdbg.h>
+#include <psp2/fios2.h>
+
 #include "utils.h"
 
 void *gpu_alloc(SceKernelMemBlockType type, unsigned int size, unsigned int alignment, unsigned int attribs, SceUID *uid)
@@ -14,7 +17,16 @@ void *gpu_alloc(SceKernelMemBlockType type, unsigned int size, unsigned int alig
 		size = ALIGN(size, 4 * 1024);
 	}
 
-	*uid = sceKernelAllocMemBlock("gpu_mem", type, size, NULL);
+	if (alignment) {
+		SceKernelAllocMemBlockOpt opt;
+		sceClibMemset(&opt, 0, sizeof(SceKernelAllocMemBlockOpt));
+		opt.size = sizeof(SceKernelAllocMemBlockOpt);
+		opt.alignment = alignment;
+
+		*uid = sceKernelAllocMemBlock("gpu_mem", type, size, &opt);
+	}
+	else
+		*uid = sceKernelAllocMemBlock("gpu_mem", type, size, NULL);
 
 	if (*uid < 0) {
 		SCE_DBG_LOG_ERROR("[UTILS] sceKernelAllocMemBlock(): 0x%X", *uid);

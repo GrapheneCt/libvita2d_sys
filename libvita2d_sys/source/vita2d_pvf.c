@@ -17,7 +17,7 @@
 
 #define PVF_GLYPH_MARGIN 2
 
-extern void* heap_internal;
+extern void* vita2d_heap_internal;
 
 typedef struct vita2d_pvf_font_handle {
 	ScePvfFontId font_handle;
@@ -42,17 +42,17 @@ static void *pvf_alloc_func(void *userdata, unsigned int size)
 	heap_alloc_opt_param param;
 	param.size = sizeof(heap_alloc_opt_param);
 	param.alignment = sizeof(int);
-	return heap_alloc_heap_memory_with_option(heap_internal, (size + sizeof(int) - 1) / sizeof(int) * sizeof(int), &param);
+	return heap_alloc_heap_memory_with_option(vita2d_heap_internal, (size + sizeof(int) - 1) / sizeof(int) * sizeof(int), &param);
 }
 
 static void *pvf_realloc_func(void *userdata, void *old_ptr, unsigned int size)
 {
-	return heap_realloc_heap_memory(heap_internal, old_ptr, (size + sizeof(int) - 1) / sizeof(int) * sizeof(int));
+	return heap_realloc_heap_memory(vita2d_heap_internal, old_ptr, (size + sizeof(int) - 1) / sizeof(int) * sizeof(int));
 }
 
 static void pvf_free_func(void *userdata, void *p)
 {
-	heap_free_heap_memory(heap_internal, p);
+	heap_free_heap_memory(vita2d_heap_internal, p);
 }
 
 static void vita2d_load_pvf_post(vita2d_pvf *font)
@@ -72,7 +72,7 @@ static vita2d_pvf *vita2d_load_pvf_pre(int numFonts)
 {
 	ScePvfError error;
 
-	vita2d_pvf *font = heap_alloc_heap_memory(heap_internal, sizeof(*font));
+	vita2d_pvf *font = heap_alloc_heap_memory(vita2d_heap_internal, sizeof(*font));
 	if (!font) {
 		SCE_DBG_LOG_ERROR("[PVF] heap_alloc_heap_memory() returned NULL");
 		return NULL;
@@ -93,7 +93,7 @@ static vita2d_pvf *vita2d_load_pvf_pre(int numFonts)
 	font->lib_handle = scePvfNewLib(&params, &error);
 	if (error != 0) {
 		SCE_DBG_LOG_ERROR("[PVF] scePvfNewLib(): 0x%X", error);
-		heap_free_heap_memory(heap_internal, font);
+		heap_free_heap_memory(vita2d_heap_internal, font);
 		return NULL;
 	}
 
@@ -150,9 +150,9 @@ vita2d_pvf *generic_vita2d_load_system_pvf(int numFonts, const vita2d_system_pvf
 		scePvfSetCharSize(handle, hSize, vSize);
 
 		if (font->font_handle_list == NULL) {
-			tmp = font->font_handle_list = heap_alloc_heap_memory(heap_internal, sizeof(vita2d_pvf_font_handle));
+			tmp = font->font_handle_list = heap_alloc_heap_memory(vita2d_heap_internal, sizeof(vita2d_pvf_font_handle));
 		} else {
-			tmp = tmp->next = heap_alloc_heap_memory(heap_internal, sizeof(vita2d_pvf_font_handle));
+			tmp = tmp->next = heap_alloc_heap_memory(vita2d_heap_internal, sizeof(vita2d_pvf_font_handle));
 		}
 		if (!tmp) {
 			scePvfClose(handle);
@@ -173,11 +173,11 @@ cleanup:
 	while (tmp) {
 		scePvfClose(tmp->font_handle);
 		vita2d_pvf_font_handle *next = tmp->next;
-		heap_free_heap_memory(heap_internal, tmp);
+		heap_free_heap_memory(vita2d_heap_internal, tmp);
 		tmp = next;
 	}
 	scePvfDoneLib(font->lib_handle);
-	heap_free_heap_memory(heap_internal, font);
+	heap_free_heap_memory(vita2d_heap_internal, font);
 	return NULL;
 }
 
@@ -205,10 +205,10 @@ vita2d_pvf *vita2d_load_custom_pvf(const char *path, float hSize, float vSize)
 		return NULL;
 	}
 
-	vita2d_pvf_font_handle *handle = heap_alloc_heap_memory(heap_internal, sizeof(vita2d_pvf_font_handle));
+	vita2d_pvf_font_handle *handle = heap_alloc_heap_memory(vita2d_heap_internal, sizeof(vita2d_pvf_font_handle));
 	if (!handle) {
 		SCE_DBG_LOG_ERROR("[PVF] heap_alloc_heap_memory() returned NULL");
-		heap_free_heap_memory(heap_internal, font);
+		heap_free_heap_memory(vita2d_heap_internal, font);
 		return NULL;
 	}
 
@@ -216,8 +216,8 @@ vita2d_pvf *vita2d_load_custom_pvf(const char *path, float hSize, float vSize)
 	if (error != 0) {
 		SCE_DBG_LOG_ERROR("[PVF] scePvfOpenUserFile(): 0x%X", error);
 		scePvfDoneLib(font->lib_handle);
-		heap_free_heap_memory(heap_internal, handle);
-		heap_free_heap_memory(heap_internal, font);
+		heap_free_heap_memory(vita2d_heap_internal, handle);
+		heap_free_heap_memory(vita2d_heap_internal, font);
 		return NULL;
 	}
 
@@ -242,10 +242,10 @@ vita2d_pvf *vita2d_load_custom_pvf_buffer(void* buf, float hSize, float vSize)
 		return NULL;
 	}
 
-	vita2d_pvf_font_handle *handle = heap_alloc_heap_memory(heap_internal, sizeof(vita2d_pvf_font_handle));
+	vita2d_pvf_font_handle *handle = heap_alloc_heap_memory(vita2d_heap_internal, sizeof(vita2d_pvf_font_handle));
 	if (!handle) {
 		SCE_DBG_LOG_ERROR("[PVF] heap_alloc_heap_memory() returned NULL");
-		heap_free_heap_memory(heap_internal, font);
+		heap_free_heap_memory(vita2d_heap_internal, font);
 		return NULL;
 	}
 
@@ -253,8 +253,8 @@ vita2d_pvf *vita2d_load_custom_pvf_buffer(void* buf, float hSize, float vSize)
 	if (error != 0) {
 		SCE_DBG_LOG_ERROR("[PVF] scePvfOpenUserMemory(): 0x%X", error);
 		scePvfDoneLib(font->lib_handle);
-		heap_free_heap_memory(heap_internal, handle);
-		heap_free_heap_memory(heap_internal, font);
+		heap_free_heap_memory(vita2d_heap_internal, handle);
+		heap_free_heap_memory(vita2d_heap_internal, font);
 		return NULL;
 	}
 
@@ -278,12 +278,12 @@ void vita2d_free_pvf(vita2d_pvf *font)
 		while (tmp) {
 			scePvfClose(tmp->font_handle);
 			vita2d_pvf_font_handle *next = tmp->next;
-			heap_free_heap_memory(heap_internal, tmp);
+			heap_free_heap_memory(vita2d_heap_internal, tmp);
 			tmp = next;
 		}
 		scePvfDoneLib(font->lib_handle);
 		texture_atlas_free(font->atlas);
-		heap_free_heap_memory(heap_internal, font);
+		heap_free_heap_memory(vita2d_heap_internal, font);
 	}
 }
 

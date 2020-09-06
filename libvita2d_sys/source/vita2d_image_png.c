@@ -2,15 +2,15 @@
 #include <psp2/kernel/clib.h>
 #include <psp2/gxm.h>
 #include <psp2/libdbg.h>
+#include <psp2/fios2.h>
 #include <png.h>
 #include "vita2d_sys.h"
 
-#include "fios2ac.h"
 #include "heap.h"
 
 #define PNG_SIGSIZE (8)
 
-extern void* heap_internal;
+extern void* vita2d_heap_internal;
 
 static void _vita2d_read_png_file_fn(png_structp png_ptr, png_bytep data, png_size_t length)
 {
@@ -96,7 +96,7 @@ static vita2d_texture *_vita2d_load_PNG_generic(const void *io_ptr, png_rw_ptr r
 
 	png_read_update_info(png_ptr, info_ptr);
 
-	row_ptrs = (png_bytep *)heap_alloc_heap_memory(heap_internal, sizeof(png_bytep) * height);
+	row_ptrs = (png_bytep *)heap_alloc_heap_memory(vita2d_heap_internal, sizeof(png_bytep) * height);
 	if (!row_ptrs) {
 		SCE_DBG_LOG_ERROR("[PNG] heap_alloc_heap_memory() returned NULL");
 		goto error_alloc_rows;
@@ -119,12 +119,12 @@ static vita2d_texture *_vita2d_load_PNG_generic(const void *io_ptr, png_rw_ptr r
 	png_read_image(png_ptr, row_ptrs);
 
 	png_destroy_read_struct(&png_ptr, &info_ptr, (png_infopp)0);
-	heap_free_heap_memory(heap_internal, row_ptrs);
+	heap_free_heap_memory(vita2d_heap_internal, row_ptrs);
 
 	return texture;
 
 error_create_tex:
-	heap_free_heap_memory(heap_internal, row_ptrs);
+	heap_free_heap_memory(vita2d_heap_internal, row_ptrs);
 error_alloc_rows:
 	png_destroy_info_struct(png_ptr, &info_ptr);
 error_create_info:

@@ -3,7 +3,7 @@
 #include "int_htab.h"
 #include "heap.h"
 
-extern void* heap_internal;
+extern void* vita2d_heap_internal;
 
 static inline unsigned int FNV_1a(unsigned int key)
 {
@@ -18,7 +18,7 @@ static inline unsigned int FNV_1a(unsigned int key)
 
 int_htab *int_htab_create(size_t size)
 {
-	int_htab *htab = heap_alloc_heap_memory(heap_internal, sizeof(*htab));
+	int_htab *htab = heap_alloc_heap_memory(vita2d_heap_internal, sizeof(*htab));
 	if (!htab) {
 		SCE_DBG_LOG_ERROR("[HTAB] heap_alloc_heap_memory() returned NULL");
 		return NULL;
@@ -27,7 +27,7 @@ int_htab *int_htab_create(size_t size)
 	htab->size = size;
 	htab->used = 0;
 
-	htab->entries = heap_alloc_heap_memory(heap_internal, htab->size * sizeof(*htab->entries));
+	htab->entries = heap_alloc_heap_memory(vita2d_heap_internal, htab->size * sizeof(*htab->entries));
 	sceClibMemset(htab->entries, 0, htab->size * sizeof(*htab->entries));
 
 	return htab;
@@ -38,9 +38,9 @@ void int_htab_free(int_htab *htab)
 	int i;
 	for (i = 0; i < htab->size; i++) {
 		if (htab->entries[i].value != NULL)
-			heap_free_heap_memory(heap_internal, htab->entries[i].value);
+			heap_free_heap_memory(vita2d_heap_internal, htab->entries[i].value);
 	}
-	heap_free_heap_memory(heap_internal, htab);
+	heap_free_heap_memory(vita2d_heap_internal, htab);
 }
 
 void int_htab_resize(int_htab *htab, unsigned int new_size)
@@ -54,7 +54,7 @@ void int_htab_resize(int_htab *htab, unsigned int new_size)
 
 	htab->size = new_size;
 	htab->used = 0;
-	htab->entries = heap_alloc_heap_memory(heap_internal, new_size * sizeof(*htab->entries));
+	htab->entries = heap_alloc_heap_memory(vita2d_heap_internal, new_size * sizeof(*htab->entries));
 	sceClibMemset(htab->entries, 0, new_size * sizeof(*htab->entries));
 
 	for (i = 0; i < old_size; i++) {
@@ -63,7 +63,7 @@ void int_htab_resize(int_htab *htab, unsigned int new_size)
 		}
 	}
 
-	heap_free_heap_memory(heap_internal, old_entries);
+	heap_free_heap_memory(vita2d_heap_internal, old_entries);
 }
 
 int int_htab_insert(int_htab *htab, unsigned int key, void *value)
