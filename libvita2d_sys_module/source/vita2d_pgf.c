@@ -207,7 +207,7 @@ vita2d_pgf *vita2d_load_custom_pgf(const char *path)
 	return font;
 }
 
-vita2d_pgf *vita2d_load_custom_pgf_buffer(void* buf)
+vita2d_pgf *vita2d_load_custom_pgf_buffer(void* buf, SceSize bufSize)
 {
 	unsigned int error;
 	vita2d_pgf *font = vita2d_load_pgf_pre(1);
@@ -224,7 +224,7 @@ vita2d_pgf *vita2d_load_custom_pgf_buffer(void* buf)
 		return NULL;
 	}
 
-	SceFontHandle font_handle = sceFontOpenUserMemory(font->lib_handle, buf, 1, &error);
+	SceFontHandle font_handle = sceFontOpenUserMemory(font->lib_handle, buf, bufSize, &error);
 	if (error != 0) {
 		SCE_DBG_LOG_ERROR("[PGF] sceFontOpenUserFile(): 0x%X", error);
 		sceFontDoneLib(font->lib_handle);
