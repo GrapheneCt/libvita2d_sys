@@ -3,7 +3,7 @@ OBJS       = source/vita2d.o source/vita2d_texture.o source/vita2d_draw.o source
              source/vita2d_image_png.o source/vita2d_image_jpeg.o source/vita2d_image_bmp.o \
              source/vita2d_image_gim.o source/vita2d_pgf.o source/vita2d_pvf.o \
              source/bin_packing_2d.o source/texture_atlas.o source/int_htab.o \
-			 source/vita2d_image_gxt.o source/vita2d_sysgraphics.o source/heap.o
+			 source/vita2d_image_gxt.o source/heap.o
 INCLUDES   = include
 
 PREFIX  ?= ${DOLCESDK}/arm-dolce-eabi
