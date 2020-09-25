@@ -221,17 +221,6 @@ void vita2d_pvf_char_size(vita2d_pvf *font, float hs, float vs);
 void vita2d_pvf_linespace(vita2d_pvf *font, float ls);
 void vita2d_pvf_charspace(vita2d_pvf *font, float cs);
 
-vita2d_sys_widget* vita2d_sys_create_widget_button(vita2d_texture* texture, vita2d_pvf* font, float initX, float initY, float fontDeltaX, float fontDeltaY, const char* text);
-void vita2d_sys_delete_widget(vita2d_sys_widget* widget);
-void vita2d_sys_draw_widget(vita2d_sys_widget* widget);
-void vita2d_sys_widget_set_xy(vita2d_sys_widget* widget, float x, float y);
-void vita2d_sys_widget_set_text(vita2d_sys_widget* widget, const char* text);
-void vita2d_sys_widget_set_visibility(vita2d_sys_widget* widget, SceBool visibility);
-void vita2d_sys_widget_set_highlight(vita2d_sys_widget* widget, SceBool highlight);
-float vita2d_sys_widget_get_x(vita2d_sys_widget* widget);
-float vita2d_sys_widget_get_y(vita2d_sys_widget* widget);
-void vita2d_sys_widget_set_highlight_max(void);
-
 /* DEPRECATED, do not use in new projects */
 
 void vita2d_clib_pass_mspace(void* space);
