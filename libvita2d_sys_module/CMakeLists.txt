@@ -13,14 +13,8 @@ include("$ENV{DOLCESDK}/share/dolce.cmake" REQUIRED)
 project(vita2d_sys)
 
 add_executable(${PROJECT_NAME}
-  shader/compiled/clear_f_gxp.o
-  shader/compiled/clear_v_gxp.o
-  shader/compiled/color_f_gxp.o
-  shader/compiled/color_v_gxp.o
-  shader/compiled/texture_f_gxp.o
-  shader/compiled/texture_tint_f_gxp.o
-  shader/compiled/texture_v_gxp.o
   source/vita2d.c
+  source/heap.c
   source/utils.c
   source/vita2d_draw.c
   source/vita2d_texture.c
@@ -30,6 +24,7 @@ add_executable(${PROJECT_NAME}
   source/vita2d_image_gxt.c
   source/vita2d_image_bmp.c
   source/vita2d_image_jpeg.c
+  source/vita2d_image_gim.c
   source/vita2d_pgf.c
   source/vita2d_pvf.c
 )
@@ -49,6 +44,7 @@ include_directories(
 target_link_libraries(${PROJECT_NAME}
   SceSysmem_stub_weak
   SceDisplay_stub_weak
+  SceDisplayUser_stub_weak
   SceSysmodule_stub_weak
   SceIofilemgr_stub_weak
   SceLibKernel_stub_weak
@@ -57,6 +53,7 @@ target_link_libraries(${PROJECT_NAME}
   SceAppMgr_stub_weak
   SceShellSvc_stub_weak
   SceGxm_stub_weak
+  SceGxmInternalForVsh_stub_weak
   SceCommonDialog_stub_weak
   SceDbg_stub_weak
   SceProcessMgr_stub_weak
@@ -66,8 +63,9 @@ target_link_libraries(${PROJECT_NAME}
   SceJpegArm_stub_weak
   ScePgf_stub_weak
   ScePvf_stub_weak
-  SceLibc_stub_weak
-  gcc
+  SceLibm_stub_weak
+  SceRtabi_stub_weak
+  SceSharedFb_stub_weak
 )
 
 dolce_create_self(${PROJECT_NAME}.suprx ${PROJECT_NAME}
