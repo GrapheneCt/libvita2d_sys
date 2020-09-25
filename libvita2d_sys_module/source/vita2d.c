@@ -1,5 +1,6 @@
 #include <psp2/display.h>
 #include <psp2/gxm.h>
+#include <psp2/gxm_internal.h>
 #include <psp2/types.h>
 #include <psp2/kernel/sysmem.h>
 #include <psp2/kernel/clib.h>
@@ -16,6 +17,16 @@
 
 #include "utils.h"
 #include "heap.h"
+
+/* Shader binaries */
+
+#include "shader/compiled/clear_v_gxp.h"
+#include "shader/compiled/clear_f_gxp.h"
+#include "shader/compiled/color_v_gxp.h"
+#include "shader/compiled/color_f_gxp.h"
+#include "shader/compiled/texture_v_gxp.h"
+#include "shader/compiled/texture_f_gxp.h"
+#include "shader/compiled/texture_tint_f_gxp.h"
 
 /* Defines */
 
@@ -58,25 +69,17 @@ typedef struct vita2d_display_data {
 
 extern int sceKernelIsGameBudget(void);
 
-extern const SceGxmProgram clear_v_gxp_start;
-extern const SceGxmProgram clear_f_gxp_start;
-extern const SceGxmProgram color_v_gxp_start;
-extern const SceGxmProgram color_f_gxp_start;
-extern const SceGxmProgram texture_v_gxp_start;
-extern const SceGxmProgram texture_f_gxp_start;
-extern const SceGxmProgram texture_tint_f_gxp_start;
-
 /* Static variables */
 
 static SceSharedFbInfo info;
 
-static const SceGxmProgram *const clearVertexProgramGxp = &clear_v_gxp_start;
-static const SceGxmProgram *const clearFragmentProgramGxp = &clear_f_gxp_start;
-static const SceGxmProgram *const colorVertexProgramGxp = &color_v_gxp_start;
-static const SceGxmProgram *const colorFragmentProgramGxp = &color_f_gxp_start;
-static const SceGxmProgram *const textureVertexProgramGxp = &texture_v_gxp_start;
-static const SceGxmProgram *const textureFragmentProgramGxp = &texture_f_gxp_start;
-static const SceGxmProgram *const textureTintFragmentProgramGxp = &texture_tint_f_gxp_start;
+static const SceGxmProgram *const clearVertexProgramGxp = (const SceGxmProgram*)clear_v_gxp;
+static const SceGxmProgram *const clearFragmentProgramGxp = (const SceGxmProgram*)clear_f_gxp;
+static const SceGxmProgram *const colorVertexProgramGxp = (const SceGxmProgram*)color_v_gxp;
+static const SceGxmProgram *const colorFragmentProgramGxp = (const SceGxmProgram*)color_f_gxp;
+static const SceGxmProgram *const textureVertexProgramGxp = (const SceGxmProgram*)texture_v_gxp;
+static const SceGxmProgram *const textureFragmentProgramGxp = (const SceGxmProgram*)texture_f_gxp;
+static const SceGxmProgram *const textureTintFragmentProgramGxp = (const SceGxmProgram*)texture_tint_f_gxp;
 
 static int display_hres = 960;
 static int display_vres = 544;
@@ -777,10 +780,10 @@ static int vita2d_init_internal(unsigned int temp_pool_size, unsigned int vdmRin
 		gxm_init_params_internal.displayQueueMaxPendingCount = 2;
 		gxm_init_params_internal.parameterBufferSize = 0x200000;
 
-		err = sceGxmVshInitialize(&gxm_init_params_internal);
+		err = sceGxmInitializeInternal(&gxm_init_params_internal);
 
 		if (err != SCE_OK)
-			SCE_DBG_LOG_ERROR("sceGxmVshInitialize(): 0x%X", err);
+			SCE_DBG_LOG_ERROR("sceGxmInitializeInternal(): 0x%X", err);
 
 		while (1) {
 			shfb_id = sceSharedFbOpen(1);
@@ -1315,6 +1318,6 @@ int module_exit() {
 
 void _start() __attribute__((weak, alias("module_start")));
 int module_start(SceSize argc, void *args) {
-	sceClibPrintf("vita2d_sys module start, ver. 01.31\n");
+	sceClibPrintf("vita2d_sys module start, ver. 01.34\n");
 	return SCE_KERNEL_START_SUCCESS;
 }
