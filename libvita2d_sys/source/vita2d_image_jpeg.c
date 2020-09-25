@@ -567,6 +567,11 @@ vita2d_texture *vita2d_load_JPEG_file(char *filename, int io_type, int useMainMe
 			validHeight = outputInfo.imageHeight;
 		}
 	}
+	else
+	{
+		validWidth = outputInfo.imageWidth;
+		validHeight = outputInfo.imageHeight;
+	}
 
 	/*E Set output buffer and quantized coefficients buffer. */
 	if (outputInfo.coefBufferSize > 0 && decCtrl.coefBufSize > 0) {
@@ -801,6 +806,11 @@ vita2d_texture *vita2d_load_JPEG_buffer(const void *buffer, unsigned long buffer
 			validWidth = outputInfo.imageWidth;
 			validHeight = outputInfo.imageHeight;
 		}
+	}
+	else
+	{
+		validWidth = outputInfo.imageWidth;
+		validHeight = outputInfo.imageHeight;
 	}
 
 	/*E Set output buffer and quantized coefficients buffer. */
@@ -1068,6 +1078,11 @@ vita2d_texture *vita2d_load_JPEG_ARM_file(char *filename, int io_type, int useDo
 			validHeight = outputInfo.imageHeight;
 		}
 	}
+	else
+	{
+		validWidth = outputInfo.imageWidth;
+		validHeight = outputInfo.imageHeight;
+	}
 
 	/*E Set output buffer and quantized coefficients buffer. */
 	if (outputInfo.coefBufferSize > 0 && decCtrl.coefBufSize > 0) {
@@ -1235,6 +1250,11 @@ vita2d_texture *vita2d_load_JPEG_ARM_buffer(const void *buffer, unsigned long bu
 			validWidth = outputInfo.imageWidth;
 			validHeight = outputInfo.imageHeight;
 		}
+	}
+	else
+	{
+		validWidth = outputInfo.imageWidth;
+		validHeight = outputInfo.imageHeight;
 	}
 
 	/*E Set output buffer and quantized coefficients buffer. */

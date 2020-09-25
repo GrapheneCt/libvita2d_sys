@@ -1,13 +1,13 @@
 #include <psp2/kernel/iofilemgr.h>
 #include <psp2/kernel/clib.h>
 #include <psp2/gxm.h>
+#include <psp2/gim.h>
 #include <psp2/fios2.h>
 #include <psp2/libdbg.h>
 #include "vita2d_sys.h"
 
 #include "utils.h"
 #include "heap.h"
-#include "gim.h"
 
 extern void* vita2d_heap_internal;
 
