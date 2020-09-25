@@ -12,6 +12,9 @@ extern "C" {
 #include <psp2/kernel/clib.h>
 #include <psp2/kernel/sysmem.h>
 
+#define SCE_GIM_TAG        0x2E47494DUL    /* 'GIM.' */
+#define SCE_GIM_VERSION    0x312E3030UL    /* '1.00' */
+
 /** GIM data block types */
 #define GIM_BLOCK_TYPE_ROOT 0x02
 #define GIM_BLOCK_TYPE_PICTURE 0x03
@@ -32,7 +35,7 @@ typedef int SceGimErrorCode;
 #define SCE_GIM_ERROR_INVALID_VALUE        -1
 #define SCE_GIM_ERROR_INVALID_POINTER      -2
 #define SCE_GIM_ERROR_INVALID_ALIGNMENT    -3
-#define SCE_GIM_ERROR_NOT_FOUND            -3
+#define SCE_GIM_ERROR_NOT_FOUND            -4
 
 #define SCE_GIM_PALETTE_SIZE_P4    64U
 #define SCE_GIM_PALETTE_SIZE_P8    1024U
@@ -61,7 +64,7 @@ typedef struct SceGimBlockInfo {
 /*	Contains information about texture block in the GIM file. */
 typedef struct SceGimTextureInfo {
 	uint16_t blockHeaderSize;   //!< Size of this header (0x30)
-	uint16_t unk0;              //!< Always 0 on PSP2
+	uint16_t reference;         //!< Always 0 on PSP2
 	uint16_t format;            //!< Texture format
 	uint16_t pixelOrder;        //!< Always 0 (normal order) on PSP2
 	uint16_t width;             //!< Texture width
@@ -69,8 +72,9 @@ typedef struct SceGimTextureInfo {
 	uint16_t bppAlign;          //!< Image/palette alignment BPP
 	uint16_t pitchAlign;        //!< Image/palette alignment X
 	uint16_t heightAlign;       //!< Image/palette alignment Y
-	uint16_t unk1;              //!< Always 2
-	uint32_t unk3;              //!< Always 0
+	uint16_t dimCount;          //!< Always 2
+	uint16_t reserved;          //!< Always 0
+	uint16_t reserved2;         //!< Always 0
 	uint32_t indexStart;        //!< Index relative start offset
 	uint32_t pixelsStart;       //!< First plane/level/frame relative start offset
 	uint32_t pixelsEnd;         //!< Last plane/level/frame relative end offset
@@ -82,12 +86,6 @@ typedef struct SceGimTextureInfo {
 	uint32_t levelOffset;       //!< Always 0x40 on PSP2
 	uint8_t pad[12];            //!< Padding
 } SceGimTextureInfo;
-
-#define SCE_GIM_TAG        0x2E47494DUL    /* '.MIG' */
-#define SCE_GIM_VERSION    0x312E3030UL
-
-#define SCE_GIM_PALETTE_SIZE_P4    64U
-#define SCE_GIM_PALETTE_SIZE_P8    1024U
 
 #ifndef SCE_GIM_ERROR_RETURN
 #define SCE_GIM_ERROR_RETURN(COND, ERROR_CODE, FMT, ...) \
@@ -183,7 +181,7 @@ void* sceGimFindPaletteAddress(void *gim) {
 /** Gets the number of textures in a GIM file.
 	@return					The number of textures.
 */
-inline uint32_t sceGimGetTextureCount(void *gim) {
+uint32_t sceGimGetTextureCount(void *gim) {
 	return 1;
 }
 
@@ -231,17 +229,19 @@ SceGimErrorCode sceGimInitTexture(SceGxmTexture *texture, void *gim) {
 	imgHdr = img + 0x10;
 	img = img + 0x50;
 
-	SceGxmTextureFormat texFormat = SCE_GXM_TEXTURE_FORMAT_P8_ABGR;
-	uint32_t strideAlign = 16;
+	SceGxmTextureFormat texFormat;
 
 	if(hdr->version == SCE_GIM_VERSION) {
 		switch(imgHdr->format)
 		{
 		case GIM_TYPE_INDEX8:
+			texFormat = SCE_GXM_TEXTURE_FORMAT_P8_ABGR;
+			break;
+		case GIM_TYPE_INDEX4:
+			texFormat = SCE_GXM_TEXTURE_FORMAT_P4_ABGR;
 			break;
 		case GIM_TYPE_RGBA8888:
 			texFormat = SCE_GXM_TEXTURE_FORMAT_U8U8U8U8_ABGR;
-			strideAlign = 4;
 			break;
 		case GIM_TYPE_RGBA4444:
 			texFormat = SCE_GXM_TEXTURE_FORMAT_U4U4U4U4_ABGR;
@@ -266,11 +266,14 @@ SceGimErrorCode sceGimInitTexture(SceGxmTexture *texture, void *gim) {
 
 	SceGxmErrorCode res = SCE_OK;
 
+	int32_t align = imgHdr->pitchAlign * 8 / imgHdr->bppAlign - 1;
+	int32_t strideWidth = (imgHdr->width + align) & ~align;
+
 	res = sceGxmTextureInitLinear(
 		texture,
 		img,
 		texFormat,
-		ALIGN(imgHdr->width, strideAlign),
+		strideWidth,
 		imgHdr->height,
 		imgHdr->levelCount);
 
@@ -281,10 +284,14 @@ SceGimErrorCode sceGimInitTexture(SceGxmTexture *texture, void *gim) {
 	if (pal) {
 		uint32_t pal_size = 0;
 
-		if (GIM_TYPE_INDEX8) {
+		if (imgHdr->format == GIM_TYPE_INDEX8) {
 			pal_size = SCE_GIM_PALETTE_SIZE_P8;
-			pal_size = ALIGN(pal_size, 4 * 1024);
 		}
+		else if (imgHdr->format == GIM_TYPE_INDEX4) {
+			pal_size = SCE_GIM_PALETTE_SIZE_P4;
+		}
+
+		pal_size = ALIGN(pal_size, 4 * 1024);
 
 		SceUID id = sceKernelAllocMemBlock("gpu_mem", SCE_KERNEL_MEMBLOCK_TYPE_USER_RW_UNCACHE, pal_size, NULL);
 
@@ -302,7 +309,12 @@ SceGimErrorCode sceGimInitTexture(SceGxmTexture *texture, void *gim) {
 			return res;
 		}
 
-		sceClibMemcpy(pal_al, pal, SCE_GIM_PALETTE_SIZE_P8);
+		if (imgHdr->format == GIM_TYPE_INDEX8) {
+			sceClibMemcpy(pal_al, pal, SCE_GIM_PALETTE_SIZE_P8);
+		}
+		else if (imgHdr->format == GIM_TYPE_INDEX4) {
+			sceClibMemcpy(pal_al, pal, SCE_GIM_PALETTE_SIZE_P4);
+		}
 
 		res = sceGxmTextureSetPalette(texture, pal_al);
 	}
