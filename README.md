@@ -43,8 +43,6 @@ vita2d_JPEG_ARM_decoder_initialize();
 vita2d_JPEG_ARM_decoder_finish();
 ```
 
-**- PNG textures can only be used in applications with newlib or SceLibc heap available**
-
 ## Changing internal heap size
 
 Default internal vita2d_sys heap size is set to 1MB. It can be changed with:
