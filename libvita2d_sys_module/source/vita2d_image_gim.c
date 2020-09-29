@@ -84,7 +84,7 @@ exit_error:
 	return NULL;
 }
 
-vita2d_texture *vita2d_load_GIM_file(char *filename, int io_type)
+vita2d_texture *vita2d_load_GIM_file(char *filename, vita2d_io_type io_type)
 {
 	int ret;
 

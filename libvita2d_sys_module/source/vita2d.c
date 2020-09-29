@@ -1318,6 +1318,6 @@ int module_exit() {
 
 void _start() __attribute__((weak, alias("module_start")));
 int module_start(SceSize argc, void *args) {
-	sceClibPrintf("vita2d_sys module start, ver. 01.34\n");
+	sceClibPrintf("vita2d_sys module start, ver. 01.35\n");
 	return SCE_KERNEL_START_SUCCESS;
 }

@@ -1,14 +1,16 @@
-#include <psp2/io/fcntl.h>
+#include <psp2/kernel/iofilemgr.h>
 #include <psp2/kernel/clib.h>
 #include <psp2/gxm.h>
 #include <psp2/libdbg.h>
+#include <psp2/fios2.h>
 #include <png.h>
 #include "vita2d_sys.h"
-#include "fios2ac.h"
+
+#include "heap.h"
 
 #define PNG_SIGSIZE (8)
 
-extern void* mspace_internal;
+extern void* vita2d_heap_internal;
 
 static void _vita2d_read_png_file_fn(png_structp png_ptr, png_bytep data, png_size_t length)
 {
@@ -45,11 +47,11 @@ static vita2d_texture *_vita2d_load_PNG_generic(const void *io_ptr, png_rw_ptr r
 
 	png_bytep *row_ptrs = NULL;
 
-	if (setjmp(png_jmpbuf(png_ptr))) {
+	/*if (setjmp(png_jmpbuf(png_ptr))) {
 		SCE_DBG_LOG_ERROR("[PNG] Invalid png data");
 		png_destroy_read_struct(&png_ptr, &info_ptr, (png_infopp)0);
 		return NULL;
-	}
+	}*/
 
 	png_set_read_fn(png_ptr, (png_voidp)io_ptr, read_data_fn);
 	png_set_sig_bytes(png_ptr, PNG_SIGSIZE);
@@ -94,9 +96,9 @@ static vita2d_texture *_vita2d_load_PNG_generic(const void *io_ptr, png_rw_ptr r
 
 	png_read_update_info(png_ptr, info_ptr);
 
-	row_ptrs = (png_bytep *)sceClibMspaceMalloc(mspace_internal, sizeof(png_bytep) * height);
+	row_ptrs = (png_bytep *)heap_alloc_heap_memory(vita2d_heap_internal, sizeof(png_bytep) * height);
 	if (!row_ptrs) {
-		SCE_DBG_LOG_ERROR("[PNG] sceClibMspaceMalloc() returned NULL");
+		SCE_DBG_LOG_ERROR("[PNG] heap_alloc_heap_memory() returned NULL");
 		goto error_alloc_rows;
 	}
 
@@ -117,12 +119,12 @@ static vita2d_texture *_vita2d_load_PNG_generic(const void *io_ptr, png_rw_ptr r
 	png_read_image(png_ptr, row_ptrs);
 
 	png_destroy_read_struct(&png_ptr, &info_ptr, (png_infopp)0);
-	sceClibMspaceFree(mspace_internal, row_ptrs);
+	heap_free_heap_memory(vita2d_heap_internal, row_ptrs);
 
 	return texture;
 
 error_create_tex:
-	sceClibMspaceFree(mspace_internal, row_ptrs);
+	heap_free_heap_memory(vita2d_heap_internal, row_ptrs);
 error_alloc_rows:
 	png_destroy_info_struct(png_ptr, &info_ptr);
 error_create_info:
@@ -164,7 +166,7 @@ exit_error:
 	return NULL;
 }
 
-vita2d_texture *vita2d_load_PNG_file(char *filename, int io_type)
+vita2d_texture *vita2d_load_PNG_file(char *filename, vita2d_io_type io_type)
 {
 	if (io_type == 1)
 		return vita2d_load_PNG_file_FIOS2(filename);

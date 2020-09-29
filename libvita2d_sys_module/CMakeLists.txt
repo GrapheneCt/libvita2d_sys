@@ -25,12 +25,13 @@ add_executable(${PROJECT_NAME}
   source/vita2d_image_bmp.c
   source/vita2d_image_jpeg.c
   source/vita2d_image_gim.c
+  #source/vita2d_image_png.c
   source/vita2d_pgf.c
   source/vita2d_pvf.c
 )
 
 link_directories(${CMAKE_CURRENT_BINARY_DIR})
-set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -Wall -nostdlib -fno-builtin")
+set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -Wall -O3 -nostdlib -fno-builtin")
 
 set_target_properties(${PROJECT_NAME}
   PROPERTIES LINK_FLAGS
@@ -42,6 +43,8 @@ include_directories(
 )
 
 target_link_libraries(${PROJECT_NAME}
+  #png16v2ds
+  #z
   SceSysmem_stub_weak
   SceDisplay_stub_weak
   SceDisplayUser_stub_weak
@@ -66,6 +69,7 @@ target_link_libraries(${PROJECT_NAME}
   SceLibm_stub_weak
   SceRtabi_stub_weak
   SceSharedFb_stub_weak
+  SceLibc_stub_weak
 )
 
 dolce_create_self(${PROJECT_NAME}.suprx ${PROJECT_NAME}

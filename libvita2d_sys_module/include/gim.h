@@ -1,5 +1,5 @@
-#ifndef GIM_H_
-#define GIM_H_
+#ifndef GIM_H
+#define GIM_H
 
 #ifdef __cplusplus
 extern "C" {
@@ -229,7 +229,7 @@ SceGimErrorCode sceGimInitTexture(SceGxmTexture *texture, void *gim) {
 	imgHdr = img + 0x10;
 	img = img + 0x50;
 
-	SceGxmTextureFormat texFormat;
+	SceGxmTextureFormat texFormat = 0;
 
 	if(hdr->version == SCE_GIM_VERSION) {
 		switch(imgHdr->format)

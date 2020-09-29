@@ -6,6 +6,50 @@
 
 #include "utils.h"
 
+int readFile(const char *fileName, unsigned char *pBuffer, SceSize bufSize)
+{
+	int ret;
+	SceUID fd;
+	int remainSize;
+
+	fd = sceIoOpen(fileName, SCE_O_RDONLY, 0);
+
+	if (fd < 0)
+		SCE_DBG_LOG_ERROR("[UTILS] Can't open file %s sceIoOpen(): 0x%X", fileName, fd);
+
+	remainSize = bufSize;
+	while (remainSize > 0) {
+		ret = sceIoRead(fd, pBuffer, remainSize);
+		pBuffer += ret;
+		remainSize -= ret;
+	}
+	sceIoClose(fd);
+
+	return 0;
+}
+
+int readFileFIOS2(char *fileName, unsigned char *pBuffer, SceSize bufSize)
+{
+	int ret;
+	SceFiosFH fd;
+	int remainSize;
+
+	ret = sceFiosFHOpenSync(NULL, &fd, fileName, NULL);
+
+	if (ret < 0)
+		SCE_DBG_LOG_ERROR("[UTILS] Can't open file %s sceFiosFHOpenSync(): 0x%X", fileName, ret);
+
+	remainSize = bufSize;
+	while (remainSize > 0) {
+		ret = sceFiosFHReadSync(NULL, fd, pBuffer, remainSize);
+		pBuffer += ret;
+		remainSize -= ret;
+	}
+	sceFiosFHCloseSync(NULL, fd);
+
+	return 0;
+}
+
 void *gpu_alloc(SceKernelMemBlockType type, unsigned int size, unsigned int alignment, unsigned int attribs, SceUID *uid)
 {
 	void *mem;

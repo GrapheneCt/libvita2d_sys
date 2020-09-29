@@ -83,6 +83,8 @@ vita2d_sys:
         - vita2d_load_additional_GXT
         - vita2d_load_GXT_file
         - vita2d_free_additional_GXT
+        - vita2d_load_GIM_file
+        - vita2d_load_GIM_buffer
         - vita2d_load_BMP_file
         - vita2d_load_BMP_buffer
         - vita2d_load_JPEG_ARM_file
@@ -93,6 +95,8 @@ vita2d_sys:
         - vita2d_load_JPEG_buffer
         - vita2d_JPEG_decoder_finish
         - vita2d_JPEG_decoder_initialize
+        - vita2d_load_PNG_file
+        - vita2d_load_PNG_buffer
         - vita2d_load_system_pgf
         - vita2d_load_default_pgf
         - vita2d_load_custom_pgf

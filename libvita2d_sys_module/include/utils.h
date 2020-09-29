@@ -4,18 +4,19 @@
 #include <psp2/gxm.h>
 #include <psp2/types.h>
 #include <psp2/kernel/sysmem.h>
+#include <psp2/fios2.h>
 
 /* Misc utils */
 #define ALIGN(x, a)	(((x) + ((a) - 1)) & ~((a) - 1))
 #define	UNUSED(a)	(void)(a)
 #define SCREEN_DPI	220
 
+/* IO utils */
+int readFile(const char *fileName, unsigned char *pBuffer, SceSize bufSize);
+int readFileFIOS2(char *fileName, unsigned char *pBuffer, SceSize bufSize);
+
 /* Font utils */
 int utf8_to_ucs2(const char *utf8, unsigned int *character);
-
-/* Clib utils */
-void _vita2d_create_clib_mspace();
-void *_vita2d_get_clib_mspace();
 
 /* GPU utils */
 void *gpu_alloc(SceKernelMemBlockType type, unsigned int size, unsigned int alignment, unsigned int attribs, SceUID *uid);
