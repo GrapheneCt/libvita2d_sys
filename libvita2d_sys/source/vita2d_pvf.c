@@ -186,6 +186,11 @@ vita2d_pvf *vita2d_load_system_pvf(int numFonts, const vita2d_system_pvf_config 
 	return generic_vita2d_load_system_pvf(numFonts, configs, hSize, vSize, 0);
 }
 
+vita2d_pvf *vita2d_load_system_shared_pvf(int numFonts, const vita2d_system_pvf_config *configs, float hSize, float vSize)
+{
+	return generic_vita2d_load_system_pvf(numFonts, configs, hSize, vSize, 1);
+}
+
 vita2d_pvf *vita2d_load_default_pvf()
 {
 	vita2d_system_pvf_config configs[] = {

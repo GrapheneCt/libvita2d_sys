@@ -116,7 +116,7 @@ exit_error:
 	return NULL;
 }
 
-vita2d_texture *vita2d_load_GXT_file(char *filename, int texture_index, int io_type)
+vita2d_texture *vita2d_load_GXT_file(char *filename, int texture_index, vita2d_io_type io_type)
 {
 	int ret;
 

@@ -13,18 +13,6 @@
 #include "heap.h"
 
 #define GXM_TEX_MAX_SIZE 4096
-#define ROUND_UP(x, a)	((((unsigned int)x)+((a)-1u))&(~((a)-1u)))
-#define MAX_IMAGE_WIDTH		960
-#define MAX_IMAGE_HEIGHT	544
-#define MAX_IMAGE_BUF_SIZE	(MAX_IMAGE_WIDTH * MAX_IMAGE_HEIGHT * 3)
-#define MAX_JPEG_BUF_SIZE	(MAX_IMAGE_WIDTH * MAX_IMAGE_HEIGHT)
-#define MAX_COEF_BUF_SIZE	0
-/*#define MAX_COEF_BUF_SIZE	(MAX_IMAGE_BUF_SIZE * 2 + 256)*/
-
-#define VDISP_FRAME_WIDTH		960
-#define VDISP_FRAME_HEIGHT		544
-#define VDISP_FRAME_BUF_SIZE	(VDISP_FRAME_WIDTH * VDISP_FRAME_HEIGHT * 4)
-#define VDISP_FRAME_BUF_NUM		2
 
 #define likely(x)	__builtin_expect(!!(x), 1)
 #define unlikely(x)	__builtin_expect(!!(x), 0)
@@ -353,7 +341,7 @@ int csc(void *pRGBA, const unsigned char *pYCbCr, int xysize, int iFrameWidth,
 	ySize = width * height;
 	switch (sampling & 0xFFFF) {
 	case SCE_JPEG_CS_H2V1:
-		cSize = ROUND_UP(width, 32) * height >> 1;
+		cSize = ALIGN(width, 32) * height >> 1;
 		yuv422ToRgba8888(
 			(uint8_t * __restrict__)pRGBA,
 			(const uint8_t * __restrict__)pYCbCr,
@@ -365,7 +353,7 @@ int csc(void *pRGBA, const unsigned char *pYCbCr, int xysize, int iFrameWidth,
 		if ((height & 1u)) {
 			return SCE_JPEG_ERROR_UNSUPPORT_IMAGE_SIZE;
 		}
-		cSize = ROUND_UP(width, 32) * height >> 2;
+		cSize = ALIGN(width, 32) * height >> 2;
 		yuv420ToRgba8888(
 			(uint8_t * __restrict__)pRGBA,
 			(const uint8_t * __restrict__)pYCbCr,
@@ -376,50 +364,6 @@ int csc(void *pRGBA, const unsigned char *pYCbCr, int xysize, int iFrameWidth,
 	default:
 		return SCE_JPEG_ERROR_UNSUPPORT_SAMPLING;
 	}
-
-	return 0;
-}
-
-int readFile(const char *fileName, unsigned char *pBuffer, SceSize bufSize)
-{
-	int ret;
-	SceUID fd;
-	int remainSize;
-
-	fd = sceIoOpen(fileName, SCE_O_RDONLY, 0);
-
-	if (fd < 0)
-		SCE_DBG_LOG_ERROR("[JPEG] Can't open file %s sceIoOpen(): 0x%X", fileName, fd);
-
-	remainSize = bufSize;
-	while (remainSize > 0) {
-		ret = sceIoRead(fd, pBuffer, remainSize);
-		pBuffer += ret;
-		remainSize -= ret;
-	}
-	sceIoClose(fd);
-
-	return 0;
-}
-
-int readFileFIOS2(char *fileName, unsigned char *pBuffer, SceSize bufSize)
-{
-	int ret;
-	SceFiosFH fd;
-	int remainSize;
-
-	ret = sceFiosFHOpenSync(NULL, &fd, fileName, NULL);
-
-	if (ret < 0)
-		SCE_DBG_LOG_ERROR("[JPEG] Can't open file %s sceFiosFHOpenSync(): 0x%X", fileName, ret);
-
-	remainSize = bufSize;
-	while (remainSize > 0) {
-		ret = sceFiosFHReadSync(NULL, fd, pBuffer, remainSize);
-		pBuffer += ret;
-		remainSize -= ret;
-	}
-	sceFiosFHCloseSync(NULL, fd);
 
 	return 0;
 }
@@ -456,7 +400,7 @@ int vita2d_JPEG_decoder_finish(void)
 	}
 }
 
-vita2d_texture *vita2d_load_JPEG_file(char *filename, int io_type, int useMainMemory, int useDownScale, int downScalerHeight, int downScalerWidth)
+vita2d_texture *vita2d_load_JPEG_file(char *filename, vita2d_io_type io_type, int useMainMemory, int useDownScale, int downScalerHeight, int downScalerWidth)
 {
 	int ret;
 	JpegDecCtrl	decCtrl;
@@ -489,7 +433,7 @@ vita2d_texture *vita2d_load_JPEG_file(char *filename, int io_type, int useMainMe
 		isize = (SceSize)stat.st_size;
 	}
 
-	decCtrl.streamBufSize = ROUND_UP(isize, memBlockAlign);
+	decCtrl.streamBufSize = ALIGN(isize, memBlockAlign);
 
 	SceUID streamBufMemblock = sceKernelAllocMemBlock("jpegdecStreamBuffer",
 		memBlockType, decCtrl.streamBufSize, NULL);
@@ -523,7 +467,7 @@ vita2d_texture *vita2d_load_JPEG_file(char *filename, int io_type, int useMainMe
 	}
 
 	/*E Allocate decoder memory. */
-	totalBufSize = ROUND_UP(outputInfo.outputBufferSize + outputInfo.coefBufferSize, memBlockAlign);
+	totalBufSize = ALIGN(outputInfo.outputBufferSize + outputInfo.coefBufferSize, memBlockAlign);
 
 	decCtrl.bufferMemBlock = sceKernelAllocMemBlock("jpegdecMainBuffer",
 		memBlockType, totalBufSize, NULL);
@@ -609,7 +553,7 @@ vita2d_texture *vita2d_load_JPEG_file(char *filename, int io_type, int useMainMe
 		goto error_free_file_hw_both_buf;
 	}
 
-	unsigned int size = ROUND_UP(4 * 1024 * pFrameInfo.pitchHeight, memBlockAlign);
+	unsigned int size = ALIGN(4 * 1024 * pFrameInfo.pitchHeight, memBlockAlign);
 
 	SceUID tex_data_uid = sceKernelAllocMemBlock("gpu_mem", memBlockType, size, NULL);
 
@@ -717,12 +661,6 @@ vita2d_texture *vita2d_load_JPEG_buffer(const void *buffer, unsigned long buffer
 	int decodeMode = SCE_JPEG_MJPEG_WITH_DHT;
 	int validWidth, validHeight;
 
-	unsigned int magic = *(unsigned int *)buffer;
-	if (magic != 0xE0FFD8FF && magic != 0xE1FFD8FF) {
-		SCE_DBG_LOG_ERROR("[JPEG] Invalid JPEG magic");
-		return NULL;
-	}
-
 	/*E Determine memory types. */
 	memBlockType = SCE_KERNEL_MEMBLOCK_TYPE_USER_MAIN_PHYCONT_NC_RW;
 	SceSize memBlockAlign = 1024 * 1024;
@@ -732,7 +670,7 @@ vita2d_texture *vita2d_load_JPEG_buffer(const void *buffer, unsigned long buffer
 	/*E Allocate stream buffer. */
 	isize = buffer_size;
 
-	decCtrl.streamBufSize = ROUND_UP(isize, memBlockAlign);
+	decCtrl.streamBufSize = ALIGN(isize, memBlockAlign);
 
 	SceUID streamBufMemblock = sceKernelAllocMemBlock("jpegdecStreamBuffer",
 		memBlockType, decCtrl.streamBufSize, NULL);
@@ -763,7 +701,7 @@ vita2d_texture *vita2d_load_JPEG_buffer(const void *buffer, unsigned long buffer
 	}
 
 	/*E Allocate decoder memory. */
-	totalBufSize = ROUND_UP(outputInfo.outputBufferSize + outputInfo.coefBufferSize, memBlockAlign);
+	totalBufSize = ALIGN(outputInfo.outputBufferSize + outputInfo.coefBufferSize, memBlockAlign);
 
 	decCtrl.bufferMemBlock = sceKernelAllocMemBlock("jpegdecMainBuffer",
 		memBlockType, totalBufSize, NULL);
@@ -847,7 +785,7 @@ vita2d_texture *vita2d_load_JPEG_buffer(const void *buffer, unsigned long buffer
 	if (pFrameInfo.pitchWidth > GXM_TEX_MAX_SIZE || pFrameInfo.pitchHeight > GXM_TEX_MAX_SIZE)
 		goto error_free_buf_hw_both_buf;
 
-	unsigned int size = ROUND_UP(4 * 1024 * pFrameInfo.pitchHeight, memBlockAlign);
+	unsigned int size = ALIGN(4 * 1024 * pFrameInfo.pitchHeight, memBlockAlign);
 
 	SceUID tex_data_uid = sceKernelAllocMemBlock("gpu_mem", memBlockType, size, NULL);
 
@@ -965,7 +903,7 @@ int vita2d_JPEG_ARM_decoder_finish(void)
 	}
 }
 
-vita2d_texture *vita2d_load_JPEG_ARM_file(char *filename, int io_type, int useDownScale, int downScalerHeight, int downScalerWidth)
+vita2d_texture *vita2d_load_JPEG_ARM_file(char *filename, vita2d_io_type io_type, int useDownScale, int downScalerHeight, int downScalerWidth)
 {
 	int ret;
 	JpegDecCtrl	decCtrl;
@@ -991,7 +929,7 @@ vita2d_texture *vita2d_load_JPEG_ARM_file(char *filename, int io_type, int useDo
 		isize = (SceSize)stat.st_size;
 	}
 
-	decCtrl.streamBufSize = ROUND_UP(isize, 4 * 1024);
+	decCtrl.streamBufSize = ALIGN(isize, 4 * 1024);
 
 	SceUID streamBufMemblock = sceKernelAllocMemBlock("jpegdecStreamBuffer",
 		SCE_KERNEL_MEMBLOCK_TYPE_USER_RW, decCtrl.streamBufSize, NULL);
@@ -1025,7 +963,7 @@ vita2d_texture *vita2d_load_JPEG_ARM_file(char *filename, int io_type, int useDo
 	}
 
 	/*E Allocate decoder memory. */
-	totalBufSize = ROUND_UP(outputInfo.outputBufferSize + outputInfo.coefBufferSize, 4 * 1024);
+	totalBufSize = ALIGN(outputInfo.outputBufferSize + outputInfo.coefBufferSize, 4 * 1024);
 
 	decCtrl.bufferMemBlock = sceKernelAllocMemBlock("jpegdecMainBuffer",
 		SCE_KERNEL_MEMBLOCK_TYPE_USER_RW_UNCACHE, totalBufSize, NULL);
@@ -1035,7 +973,7 @@ vita2d_texture *vita2d_load_JPEG_ARM_file(char *filename, int io_type, int useDo
 
 	sceKernelGetMemBlockBase(decCtrl.bufferMemBlock, (void **)&texture_data);
 
-	unsigned int gxmMemSize = ROUND_UP(outputInfo.outputBufferSize, 4 * 1024);
+	unsigned int gxmMemSize = ALIGN(outputInfo.outputBufferSize, 4 * 1024);
 
 	ret = sceGxmMapMemory((void*)texture_data, gxmMemSize, SCE_GXM_MEMORY_ATTRIB_READ);
 
@@ -1171,12 +1109,6 @@ vita2d_texture *vita2d_load_JPEG_ARM_buffer(const void *buffer, unsigned long bu
 	int decodeMode = SCE_JPEG_MJPEG_WITH_DHT;
 	int validWidth, validHeight;
 
-	unsigned int magic = *(unsigned int *)buffer;
-	if (magic != 0xE0FFD8FF && magic != 0xE1FFD8FF) {
-		SCE_DBG_LOG_ERROR("[JPEG] Invalid JPEG magic");
-		return NULL;
-	}
-
 	isize = buffer_size;
 	pJpeg = (unsigned char *)buffer;
 
@@ -1198,7 +1130,7 @@ vita2d_texture *vita2d_load_JPEG_ARM_buffer(const void *buffer, unsigned long bu
 	}
 
 	/*E Allocate decoder memory. */
-	totalBufSize = ROUND_UP(outputInfo.outputBufferSize + outputInfo.coefBufferSize, 4 * 1024);
+	totalBufSize = ALIGN(outputInfo.outputBufferSize + outputInfo.coefBufferSize, 4 * 1024);
 
 	decCtrl.bufferMemBlock = sceKernelAllocMemBlock("jpegdecMainBuffer",
 		SCE_KERNEL_MEMBLOCK_TYPE_USER_RW_UNCACHE, totalBufSize, NULL);
@@ -1208,7 +1140,7 @@ vita2d_texture *vita2d_load_JPEG_ARM_buffer(const void *buffer, unsigned long bu
 
 	sceKernelGetMemBlockBase(decCtrl.bufferMemBlock, (void **)&texture_data);
 
-	unsigned int gxmMemSize = ROUND_UP(outputInfo.outputBufferSize, 4 * 1024);
+	unsigned int gxmMemSize = ALIGN(outputInfo.outputBufferSize, 4 * 1024);
 
 	ret = sceGxmMapMemory((void*)texture_data, gxmMemSize, SCE_GXM_MEMORY_ATTRIB_READ);
 
