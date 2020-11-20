@@ -369,6 +369,19 @@ static int vita2d_init_internal_common(unsigned int temp_pool_size, unsigned int
 				NULL,
 				0,
 				NULL);
+
+			// create a sync object that we will associate with this buffer
+			err = sceGxmSyncObjectCreate(&displayBufferSync[i]);
+
+			if (err != SCE_OK)
+				SCE_DBG_LOG_ERROR("sceGxmSyncObjectCreate(): 0x%X", err);
+		}
+		else {
+			// open shared sync object that we will associate with this buffer
+			err = sceGxmSyncObjectOpenShared(i + 1, &displayBufferSync[i]);
+
+			if (err != SCE_OK)
+				SCE_DBG_LOG_ERROR("sceGxmSyncObjectOpenShared(): 0x%X", err);
 		}
 
 		// initialize a color surface for this display buffer
@@ -385,9 +398,6 @@ static int vita2d_init_internal_common(unsigned int temp_pool_size, unsigned int
 
 		if (err != SCE_OK)
 			SCE_DBG_LOG_ERROR("sceGxmColorSurfaceInit(): 0x%X", err);
-
-		// create a sync object that we will associate with this buffer
-		err = sceGxmSyncObjectCreate(&displayBufferSync[i]);
 	}
 
 	// compute the memory footprint of the depth buffer
@@ -918,13 +928,20 @@ int vita2d_fini()
 			// clear the buffer then deallocate
 			sceDmacMemset(displayBufferData[i], 0, display_vres*display_stride * 4);
 			gpu_free(displayBufferUid[i]);
+
+			// destroy the sync object
+			err = sceGxmSyncObjectDestroy(displayBufferSync[i]);
+
+			if (err != SCE_OK)
+				SCE_DBG_LOG_ERROR("sceGxmSyncObjectDestroy(): 0x%X", err);
 		}
+		else {
+			// close shared sync object
+			err = sceGxmSyncObjectCloseShared(i + 1, displayBufferSync[i]);
 
-		// destroy the sync object
-		err = sceGxmSyncObjectDestroy(displayBufferSync[i]);
-
-		if (err != SCE_OK)
-			SCE_DBG_LOG_ERROR("sceGxmSyncObjectDestroy(): 0x%X", err);
+			if (err != SCE_OK)
+				SCE_DBG_LOG_ERROR("sceGxmSyncObjectCloseShared(): 0x%X", err);
+		}
 	}
 
 	// free the depth and stencil buffer
