@@ -11,7 +11,6 @@
 #include <psp2/message_dialog.h>
 #include <psp2/sysmodule.h>
 #include <psp2/appmgr.h>
-#include <psp2/scebase.h>
 #include <psp2/libdbg.h>
 #include "vita2d_sys.h"
 
