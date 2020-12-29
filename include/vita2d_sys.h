@@ -6,6 +6,7 @@
 #include <psp2/kernel/sysmem.h>
 #include <psp2/pgf.h>
 #include <psp2/pvf.h>
+#include <psp2/scebase_common.h>
 
 #ifdef __cplusplus
 extern "C" {
@@ -19,10 +20,8 @@ extern "C" {
 
 //#define VITA2D_SYS_PRX
 
-#if _SCE_TARGET_OS_PSP2
-#ifdef VITA2D_SYS_PRX
+#if _SCE_HOST_COMPILER_SNC && defined(VITA2D_SYS_PRX)
 #define PRX_INTERFACE __declspec (dllexport)
-#endif
 #else
 #define PRX_INTERFACE
 #endif
