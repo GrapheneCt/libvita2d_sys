@@ -13,9 +13,21 @@ SceUID vita2d_get_shfbid(); //Returns shared fb id opened by application.
 
 ## Custom resolution
 
-To set custom resolution, call vita2d_display_set_resolution() before initializing the library:
+To set custom resolution, call vita2d_display_set_max_resolution() before initializing the library. This will set maximum resolution that application will be able to use.
+After that vita2d_display_set_resolution() can be called at any time to change rendering resolution:
 ```
-void vita2d_display_set_resolution(int hRes, int vRes); //Set display resolution.
+vita2d_display_set_max_resolution(1920, 1088);
+
+vita2d_init();
+
+vita2d_start_drawing();
+.
+.
+vita2d_display_set_resolution(1280, 725); //This can be done at any time
+.
+.
+vita2d_end_drawing();
+vita2d_end_shfb();
 ```
 
 Native 1280x725 and 1920x1088 resolutions are supported for PS TV.
@@ -27,7 +39,7 @@ Loading from FIOS2 overlay (for example, loading directly from PSARC archive) is
 
 **- BMP textures can be used in all applications**
 
-**- JPEG textures: Codec Engine decoder. Specify 0 for useMainMemory to use phycont memory or 1 to use main user memory**
+**- JPEG textures: Codec Engine decoder**
 
 ```
 vita2d_JPEG_decoder_initialize();
@@ -58,6 +70,5 @@ vita2d_start_drawing();
 .
 .
 vita2d_end_drawing();
-vita2d_wait_rendering_done();
 vita2d_end_shfb();
 ```
