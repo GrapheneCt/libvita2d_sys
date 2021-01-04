@@ -12,7 +12,7 @@
 extern "C" {
 #endif
 
-#define VITA2D_SYS_VERSION_INTERNAL 0141
+#define VITA2D_SYS_VERSION_INTERNAL 0142
 
 #ifndef VITA2D_SYS_VERSION
 #define VITA2D_SYS_VERSION VITA2D_SYS_VERSION_INTERNAL
@@ -167,13 +167,22 @@ PRX_INTERFACE SceUID vita2d_get_shfbid();
 PRX_INTERFACE void vita2d_end_shfb();
 
 /**
- * [GAME MODE ONLY] Set display/rendering resolution. Must be called before vita2d_init().
+ * [GAME MODE ONLY] Set display/rendering resolution. Must not exceed maximum resolution that was set by vita2d_display_set_max_resolution()
  *
  * @param[in] hRes - width in pixels
  * @param[in] vRes - height in pixels
  *
  */
 PRX_INTERFACE void vita2d_display_set_resolution(int hRes, int vRes);
+
+/**
+ * [GAME MODE ONLY] Set maximum display/rendering resolution. Must be called before vita2d_init().
+ *
+ * @param[in] hRes - maximum width in pixels
+ * @param[in] vRes - maximum height in pixels
+ *
+ */
+PRX_INTERFACE void vita2d_display_set_max_resolution(int hRes, int vRes);
 
 /**
  * Set internal heap size. Must be called before vita2d_init().
@@ -219,6 +228,17 @@ PRX_INTERFACE int vita2d_common_dialog_update();
  *
  */
 PRX_INTERFACE void vita2d_set_clear_color(unsigned int color);
+
+/**
+ * Set clear screen rectangle vertices.
+ *
+ * @param[in] v0 - vertex 0
+ * @param[in] v1 - vertex 1
+ * @param[in] v2 - vertex 2
+ * @param[in] v3 - vertex 3
+ *
+ */
+PRX_INTERFACE void vita2d_set_clear_vertices(vita2d_clear_vertex v0, vita2d_clear_vertex v1, vita2d_clear_vertex v2, vita2d_clear_vertex v3);
 
 /**
  * Get clear screen color.

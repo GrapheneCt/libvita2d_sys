@@ -142,9 +142,25 @@ vita2d_pvf *generic_vita2d_load_system_pvf(int numFonts, const vita2d_system_pvf
 				goto cleanup;
 		}
 		else {
-			handle = scePvfOpenDefaultLatinFontOnSharedMemory(font->lib_handle, &error);
-			if (error != 0)
-				goto cleanup;
+			if (style.languageCode == SCE_PVF_LANGUAGE_LATIN) {
+				handle = scePvfOpenDefaultLatinFontOnSharedMemory(font->lib_handle, &error);
+				if (error != 0)
+					goto cleanup;
+			}
+			else if (style.languageCode == SCE_PVF_LANGUAGE_J) {
+				handle = scePvfOpenDefaultJapaneseFontOnSharedMemory(font->lib_handle, &error);
+				if (error != 0)
+					goto cleanup;
+			}
+			else {
+				index = scePvfFindOptimumFont(font->lib_handle, &style, &error);
+				if (error != 0)
+					goto cleanup;
+
+				handle = scePvfOpen(font->lib_handle, index, 0, &error);
+				if (error != 0)
+					goto cleanup;
+			}
 		}
 
 		scePvfSetCharSize(handle, hSize, vSize);
@@ -368,10 +384,10 @@ int generic_pvf_draw_text(vita2d_pvf *font, int draw, int *height,
 	ScePvfKerningInfo kerning_info;
 	unsigned int old_character = 0;
 	vita2d_texture *tex = font->atlas->texture;
-	int start_x = x;
-	int max_x = 0;
-	int pen_x = x;
-	int pen_y = y;
+	float start_x = x;
+	float max_x = 0;
+	float pen_x = x;
+	float pen_y = y;
 
 	for (i = 0; text[i];) {
 		i += utf8_to_ucs2(&text[i], &character);

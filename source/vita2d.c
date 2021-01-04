@@ -36,19 +36,19 @@
 #define DEFAULT_TEMP_POOL_SIZE		(1 * 1024 * 1024)
 
 typedef struct SceSharedFbInfo { // size is 0x58
-	void* base1;		// cdram base
+	void* frontBuffer;		// cdram base
 	int memsize;
-	void* base2;		// cdram base
+	void* backBuffer;		// cdram base
 	int unk_0C;
 	void *unk_10;
 	int unk_14;
 	int unk_18;
 	int unk_1C;
 	int unk_20;
-	int unk_24;		// 960
-	int unk_28;		// 960
-	int unk_2C;		// 544
-	int unk_30;
+	int stride;		// 960
+	int width;		// 960
+	int height;		// 544
+	int colorFormat;
 	int curbuf;
 	int unk_38;
 	int unk_3C;
@@ -83,6 +83,9 @@ static const SceGxmProgram *const textureTintFragmentProgramGxp = (const SceGxmP
 static int display_hres = 960;
 static int display_vres = 544;
 static int display_stride = 960;
+static int max_display_hres = 960;
+static int max_display_vres = 544;
+static int max_display_stride = 960;
 
 static int vita2d_initialized = 0;
 static float clear_color[4] = { 0.0f, 0.0f, 0.0f, 1.0f };
@@ -103,6 +106,8 @@ static SceUID fragmentRingBufferUid;
 static SceUID fragmentUsseRingBufferUid;
 static SceUID shfb_id;
 
+static SceGxmValidRegion validRegion;
+static SceGxmMultisampleMode msaa_s;
 static SceGxmContextParams contextParams;
 static SceGxmRenderTarget *renderTarget = NULL;
 static void *displayBufferData[DISPLAY_BUFFER_COUNT];
@@ -137,8 +142,10 @@ static SceUID patcherVertexUsseUid;
 static SceUID patcherFragmentUsseUid;
 
 static SceUID clearVerticesUid;
+static SceUID clearIndicesUid;
 static SceUID linearIndicesUid;
 static vita2d_clear_vertex *clearVertices = NULL;
+static uint16_t *clearIndices = NULL;
 static uint16_t *linearIndices = NULL;
 
 /* Shared with other .c */
@@ -272,25 +279,29 @@ static int vita2d_init_internal_common(unsigned int temp_pool_size, unsigned int
 	unsigned int i;
 	UNUSED(err);
 
+	validRegion.xMax = display_hres - 1;
+	validRegion.yMax = display_vres - 1;
+
+	msaa_s = msaa;
 	SceKernelMemBlockType mem_type = vita2d_texture_get_alloc_memblock_type();
 
 	// allocate ring buffer memory using default sizes
 	void *vdmRingBuffer = gpu_alloc(
-		mem_type,
+		SCE_KERNEL_MEMBLOCK_TYPE_USER_RW_UNCACHE,
 		vdmRingBufferMemsize,
 		4,
 		SCE_GXM_MEMORY_ATTRIB_READ,
 		&vdmRingBufferUid);
 
 	void *vertexRingBuffer = gpu_alloc(
-		mem_type,
+		SCE_KERNEL_MEMBLOCK_TYPE_USER_RW_UNCACHE,
 		vertexRingBufferMemsize,
 		4,
 		SCE_GXM_MEMORY_ATTRIB_READ,
 		&vertexRingBufferUid);
 
 	void *fragmentRingBuffer = gpu_alloc(
-		mem_type,
+		SCE_KERNEL_MEMBLOCK_TYPE_USER_RW_UNCACHE,
 		fragmentRingBufferMemsize,
 		4,
 		SCE_GXM_MEMORY_ATTRIB_READ,
@@ -324,8 +335,8 @@ static int vita2d_init_internal_common(unsigned int temp_pool_size, unsigned int
 	SceGxmRenderTargetParams renderTargetParams;
 	sceClibMemset(&renderTargetParams, 0, sizeof(SceGxmRenderTargetParams));
 	renderTargetParams.flags = 0;
-	renderTargetParams.width = display_hres;
-	renderTargetParams.height = display_vres;
+	renderTargetParams.width = max_display_hres;
+	renderTargetParams.height = max_display_vres;
 	renderTargetParams.scenesPerFrame = 1;
 	renderTargetParams.multisampleMode = msaa;
 	renderTargetParams.multisampleLocations = 0;
@@ -462,7 +473,7 @@ static int vita2d_init_internal_common(unsigned int temp_pool_size, unsigned int
 
 	// allocate memory for buffers and USSE code
 	void *patcherBuffer = gpu_alloc(
-		mem_type,
+		SCE_KERNEL_MEMBLOCK_TYPE_USER_RW_UNCACHE,
 		patcherBufferSize,
 		4,
 		SCE_GXM_MEMORY_ATTRIB_READ | SCE_GXM_MEMORY_ATTRIB_WRITE,
@@ -618,17 +629,6 @@ static int vita2d_init_internal_common(unsigned int temp_pool_size, unsigned int
 	if (err != SCE_OK)
 		SCE_DBG_LOG_ERROR("clear sceGxmShaderPatcherCreateFragmentProgram(): 0x%X", err);
 
-	// create the clear triangle vertex/index data
-	clearVertices = (vita2d_clear_vertex *)gpu_alloc(
-		mem_type,
-		3 * sizeof(vita2d_clear_vertex),
-		4,
-		SCE_GXM_MEMORY_ATTRIB_READ,
-		&clearVerticesUid);
-
-	// Allocate a 64k * 2 bytes = 128 KiB buffer and store all possible
-	// 16-bit indices in linear ascending order, so we can use this for
-	// all drawing operations where we don't want to use indexing.
 	linearIndices = (uint16_t *)gpu_alloc(
 		mem_type,
 		UINT16_MAX * sizeof(uint16_t),
@@ -641,12 +641,36 @@ static int vita2d_init_internal_common(unsigned int temp_pool_size, unsigned int
 		linearIndices[i] = i;
 	}
 
+	// create the clear triangle vertex/index data
+	clearVertices = (vita2d_clear_vertex *)gpu_alloc(
+		SCE_KERNEL_MEMBLOCK_TYPE_USER_RW_UNCACHE,
+		4 * sizeof(vita2d_clear_vertex),
+		4,
+		SCE_GXM_MEMORY_ATTRIB_READ,
+		&clearVerticesUid);
+
+	clearIndices = (uint16_t *)gpu_alloc(
+		SCE_KERNEL_MEMBLOCK_TYPE_USER_RW_UNCACHE,
+		6 * sizeof(uint16_t),
+		2,
+		SCE_GXM_MEMORY_ATTRIB_READ,
+		&clearIndicesUid);
+
 	clearVertices[0].x = -1.0f;
 	clearVertices[0].y = -1.0f;
-	clearVertices[1].x = 3.0f;
+	clearVertices[1].x = 1.0f;
 	clearVertices[1].y = -1.0f;
 	clearVertices[2].x = -1.0f;
-	clearVertices[2].y = 3.0f;
+	clearVertices[2].y = 1.0f;
+	clearVertices[3].x = 1.0f;
+	clearVertices[3].y = 1.0f;
+
+	clearIndices[0] = 0;
+	clearIndices[1] = 1;
+	clearIndices[2] = 2;
+	clearIndices[3] = 1;
+	clearIndices[4] = 2;
+	clearIndices[5] = 3;
 
 	const SceGxmProgramParameter *paramColorPositionAttribute = sceGxmProgramFindParameterByName(colorVertexProgramGxp, "aPosition");
 	SCE_DBG_LOG_DEBUG("aPosition sceGxmProgramFindParameterByName(): %p\n", paramColorPositionAttribute);
@@ -747,7 +771,7 @@ static int vita2d_init_internal_common(unsigned int temp_pool_size, unsigned int
 	// Allocate memory for the memory pool
 	pool_size = temp_pool_size;
 	pool_addr = gpu_alloc(
-		mem_type,
+		SCE_KERNEL_MEMBLOCK_TYPE_USER_RW_UNCACHE,
 		pool_size,
 		sizeof(void *),
 		SCE_GXM_MEMORY_ATTRIB_READ,
@@ -806,13 +830,13 @@ static int vita2d_init_internal(unsigned int temp_pool_size, unsigned int vdmRin
 
 		vita2d_texture_set_alloc_memblock_type(SCE_KERNEL_MEMBLOCK_TYPE_USER_RW_UNCACHE);
 
-		err = sceGxmMapMemory(info.base1, info.memsize, SCE_GXM_MEMORY_ATTRIB_READ | SCE_GXM_MEMORY_ATTRIB_WRITE);
+		err = sceGxmMapMemory(info.frontBuffer, info.memsize, SCE_GXM_MEMORY_ATTRIB_READ | SCE_GXM_MEMORY_ATTRIB_WRITE);
 
 		if (err != SCE_OK)
 			SCE_DBG_LOG_ERROR("sharedfb sceGxmMapMemory(): 0x%X", err);
 
-		displayBufferData[0] = info.base1;
-		displayBufferData[1] = info.base2;
+		displayBufferData[0] = info.frontBuffer;
+		displayBufferData[1] = info.backBuffer;
 
 		return vita2d_init_internal_common(temp_pool_size, vdmRingBufferMemsize, vertexRingBufferMemsize, fragmentRingBufferMemsize,
 			fragmentUsseRingBufferMemsize, msaa);
@@ -841,7 +865,60 @@ void vita2d_display_set_resolution(int hRes, int vRes)
 {
 	display_hres = hRes;
 	display_vres = vRes;
-	display_stride = hRes;
+
+	switch (hRes) {
+	case 1920:
+		display_stride = 1920;
+		break;
+	case 1280:
+		display_stride = 1280;
+		break;
+	case 960:
+		display_stride = 960;
+		break;
+	case 720:
+		display_stride = 768;
+		break;
+	case 640:
+		display_stride = 640;
+		break;
+	case 480:
+		display_stride = 512;
+		break;
+	}
+
+	validRegion.xMax = hRes - 1;
+	validRegion.yMax = vRes - 1;
+}
+
+void vita2d_display_set_max_resolution(int hRes, int vRes)
+{
+	max_display_hres = hRes;
+	max_display_vres = vRes;
+	
+	switch (hRes) {
+	case 1920:
+		max_display_stride = 1920;
+		break;
+	case 1280:
+		max_display_stride = 1280;
+		break;
+	case 960:
+		max_display_stride = 960;
+		break;
+	case 720:
+		max_display_stride = 768;
+		break;
+	case 640:
+		max_display_stride = 640;
+		break;
+	case 480:
+		max_display_stride = 512;
+		break;
+	}
+
+	validRegion.xMax = hRes - 1;
+	validRegion.yMax = vRes - 1;
 }
 
 int vita2d_init()
@@ -911,6 +988,7 @@ int vita2d_fini()
 	_vita2d_free_fragment_programs(&_vita2d_fragmentPrograms.blend_mode_add);
 
 	gpu_free(linearIndicesUid);
+	gpu_free(clearIndicesUid);
 	gpu_free(clearVerticesUid);
 
 	// wait until display queue is finished before deallocating display buffers
@@ -1019,7 +1097,7 @@ int vita2d_fini()
 
 		SCE_DBG_LOG_DEBUG("System mode finalize");
 
-		err = sceGxmUnmapMemory(info.base1);
+		err = sceGxmUnmapMemory(info.frontBuffer);
 
 		if (err != SCE_OK)
 			SCE_DBG_LOG_ERROR("sceGxmUnmapMemory(): 0x%X", err);
@@ -1056,7 +1134,7 @@ void vita2d_clear_screen()
 
 	// draw the clear triangle
 	sceGxmSetVertexStream(_vita2d_context, 0, clearVertices);
-	sceGxmDraw(_vita2d_context, SCE_GXM_PRIMITIVE_TRIANGLES, SCE_GXM_INDEX_FORMAT_U16, linearIndices, 3);
+	sceGxmDraw(_vita2d_context, SCE_GXM_PRIMITIVE_TRIANGLES, SCE_GXM_INDEX_FORMAT_U16, clearIndices, 6);
 }
 
 void vita2d_start_drawing()
@@ -1077,11 +1155,37 @@ void vita2d_start_drawing_advanced(vita2d_texture *target, unsigned int flags)
 	}
 
 	if (target == NULL) {
+
+		if (system_mode_flag) {
+			sceGxmColorSurfaceInit(
+				&displaySurface[bufferIndex],
+				info.colorFormat,
+				SCE_GXM_COLOR_SURFACE_LINEAR,
+				(msaa_s == SCE_GXM_MULTISAMPLE_NONE) ? SCE_GXM_COLOR_SURFACE_SCALE_NONE : SCE_GXM_COLOR_SURFACE_SCALE_MSAA_DOWNSCALE,
+				SCE_GXM_OUTPUT_REGISTER_SIZE_32BIT,
+				info.width,
+				info.height,
+				info.stride,
+				info.backBuffer);
+		}
+		else {
+			sceGxmColorSurfaceInit(
+				&displaySurface[bufferIndex],
+				DISPLAY_COLOR_FORMAT,
+				SCE_GXM_COLOR_SURFACE_LINEAR,
+				(msaa_s == SCE_GXM_MULTISAMPLE_NONE) ? SCE_GXM_COLOR_SURFACE_SCALE_NONE : SCE_GXM_COLOR_SURFACE_SCALE_MSAA_DOWNSCALE,
+				SCE_GXM_OUTPUT_REGISTER_SIZE_32BIT,
+				display_hres,
+				display_vres,
+				display_stride,
+				displayBufferData[bufferIndex]);
+		}
+
 		sceGxmBeginScene(
 			_vita2d_context,
 			flags,
 			renderTarget,
-			NULL,
+			&validRegion,
 			NULL,
 			displayBufferSync[bufferIndex],
 			&displaySurface[bufferIndex],
@@ -1244,6 +1348,18 @@ void vita2d_set_clear_color(unsigned int color)
 	clear_color[2] = ((color >> 8 * 2) & 0xFF) / 255.0f;
 	clear_color[3] = ((color >> 8 * 3) & 0xFF) / 255.0f;
 	clear_color_u = color;
+}
+
+void vita2d_set_clear_vertices(vita2d_clear_vertex v0, vita2d_clear_vertex v1, vita2d_clear_vertex v2, vita2d_clear_vertex v3)
+{
+	clearVertices[0].x = v0.x;
+	clearVertices[0].y = v0.y;
+	clearVertices[1].x = v1.x;
+	clearVertices[1].y = v1.y;
+	clearVertices[2].x = v2.x;
+	clearVertices[2].y = v2.y;
+	clearVertices[3].x = v3.x;
+	clearVertices[3].y = v3.y;
 }
 
 unsigned int vita2d_get_clear_color()

@@ -11,6 +11,8 @@ vita2d_sys:
     vita2d_sys:
       functions:
         - vita2d_display_set_resolution
+        - vita2d_display_set_max_resolution
+        - vita2d_set_clear_vertices
         - vita2d_init
         - vita2d_init_advanced
         - vita2d_init_advanced_with_msaa

@@ -51,18 +51,14 @@ target_link_libraries(${PROJECT_NAME}
   SceSysmodule_stub_weak
   SceIofilemgr_stub_weak
   SceLibKernel_stub_weak
-  SceKernelThreadMgr_stub_weak
-  SceKernelModulemgr_stub_weak
   SceAppMgr_stub_weak
   SceShellSvc_stub_weak
   SceGxm_stub_weak
   SceGxmInternalForVsh_stub_weak
   SceCommonDialog_stub_weak
   SceDbg_stub_weak
-  SceProcessMgr_stub_weak
-  SceKernelDmacMgr_stub
   SceFios2_stub_weak
-  SceJpeg_stub_weak
+  SceJpegUser_stub_weak
   SceJpegArm_stub_weak
   ScePgf_stub_weak
   ScePvf_stub_weak
@@ -70,6 +66,11 @@ target_link_libraries(${PROJECT_NAME}
   SceRtabi_stub_weak
   SceSharedFb_stub_weak
   SceLibc_stub_weak
+  SceThreadmgr_stub_weak
+  SceModulemgr_stub_weak
+  SceProcessmgr_stub_weak
+  SceDmacmgr_stub_weak
+  
 )
 
 dolce_create_self(${PROJECT_NAME}.suprx ${PROJECT_NAME}
