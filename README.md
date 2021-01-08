@@ -37,8 +37,6 @@ Use Sharpscale to be able to use 1280x720 and 1920x1080 or for normal Vita: http
 
 Loading from FIOS2 overlay (for example, loading directly from PSARC archive) is supported. When calling vita2d_load_XXX_file() specify 1 for io_type to use FIOS2 or 0 to use SceIo. When using FIOS2, remember to specify your mounted path to the file instead of the actual file path. 
 
-**- BMP textures can be used in all applications**
-
 **- JPEG textures: Codec Engine decoder**
 
 ```
