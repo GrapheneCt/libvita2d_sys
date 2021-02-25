@@ -1,86 +1,95 @@
-cmake_minimum_required(VERSION 2.8)
+cmake_minimum_required(VERSION 3.19)
 
-if(NOT DEFINED CMAKE_TOOLCHAIN_FILE)
-  if(DEFINED ENV{DOLCESDK})
-    set(CMAKE_TOOLCHAIN_FILE "$ENV{DOLCESDK}/share/dolce.toolchain.cmake" CACHE PATH "toolchain file")
-  else()
-    message(FATAL_ERROR "Please define DOLCESDK to point to your SDK path!")
-  endif()
-endif()
+set(CMAKE_TOOLCHAIN_FILE "$ENV{SCE_PSP2_SDK_DIR}/host_tools/build/cmake/psp2-snc-toolchain.cmake")
 
-include("$ENV{DOLCESDK}/share/dolce.cmake" REQUIRED)
+project(vita2d_sys LANGUAGES C)
 
-project(vita2d_sys)
+include(VitaDevelopmentSuite)
+set(CMAKE_C_STANDARD 99)
 
-add_executable(${PROJECT_NAME}
-  source/vita2d.c
-  source/heap.c
-  source/utils.c
-  source/vita2d_draw.c
-  source/vita2d_texture.c
-  source/texture_atlas.c
-  source/int_htab.c
-  source/bin_packing_2d.c
-  source/vita2d_image_gxt.c
-  source/vita2d_image_bmp.c
-  source/vita2d_image_jpeg.c
-  source/vita2d_image_gim.c
-  source/vita2d_image_png.c
-  source/vita2d_pgf.c
-  source/vita2d_pvf.c
+add_compile_options(
+  -Xdiag=0 -Xquit=2 -O3
 )
 
-link_directories(${CMAKE_CURRENT_BINARY_DIR})
-set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -Wall -O3 -nostdlib -fno-builtin -DVITA2D_SYS_PRX")
-
-set_target_properties(${PROJECT_NAME}
-  PROPERTIES LINK_FLAGS
-  -nostartfiles
+add_link_options(
+  -s
 )
 
 include_directories(
-  include
+  ${VDSUITE_USER_INCLUDE_DIRECTORIES}
+  libvita2d_sys/include
 )
 
-target_link_libraries(${PROJECT_NAME}
-  png16v2ds
-  z
+link_directories(
+  ${VDSUITE_LIBRARY_DIRECTORIES}
+  libvita2d_sys/include
+)
+
+add_library(${PROJECT_NAME} STATIC
+  libvita2d_sys/source/vita2d.c
+  libvita2d_sys/source/heap.c
+  libvita2d_sys/source/utils.c
+  libvita2d_sys/source/vita2d_draw.c
+  libvita2d_sys/source/vita2d_texture.c
+  libvita2d_sys/source/texture_atlas.c
+  libvita2d_sys/source/int_htab.c
+  libvita2d_sys/source/bin_packing_2d.c
+  libvita2d_sys/source/vita2d_image_gxt.c
+  libvita2d_sys/source/vita2d_image_bmp.c
+  libvita2d_sys/source/vita2d_image_jpeg.c
+  libvita2d_sys/source/vita2d_image_gim.c
+  libvita2d_sys/source/vita2d_image_png.c
+  libvita2d_sys/source/vita2d_pgf.c
+  libvita2d_sys/source/vita2d_pvf.c
+)
+
+add_definitions(-DVITA2D_SYS_PRX)
+
+add_library("${PROJECT_NAME}.suprx" SHARED
+  libvita2d_sys/source/vita2d.c
+  libvita2d_sys/source/heap.c
+  libvita2d_sys/source/utils.c
+  libvita2d_sys/source/vita2d_draw.c
+  libvita2d_sys/source/vita2d_texture.c
+  libvita2d_sys/source/texture_atlas.c
+  libvita2d_sys/source/int_htab.c
+  libvita2d_sys/source/bin_packing_2d.c
+  libvita2d_sys/source/vita2d_image_gxt.c
+  libvita2d_sys/source/vita2d_image_bmp.c
+  libvita2d_sys/source/vita2d_image_jpeg.c
+  libvita2d_sys/source/vita2d_image_gim.c
+  libvita2d_sys/source/vita2d_image_png.c
+  libvita2d_sys/source/vita2d_pgf.c
+  libvita2d_sys/source/vita2d_pvf.c
+)
+
+target_link_libraries("${PROJECT_NAME}.suprx"
+  ScePng
+  SceDeflt
   SceSysmem_stub_weak
   SceDisplay_stub_weak
   SceDisplayUser_stub_weak
   SceSysmodule_stub_weak
   SceIofilemgr_stub_weak
-  SceLibKernel_stub_weak
-  SceAppMgr_stub_weak
+  SceAppMgrUser_stub_weak
   SceShellSvc_stub_weak
   SceGxm_stub_weak
+  SceGxmInternal_stub_weak
   SceGxmInternalForVsh_stub_weak
-  SceCommonDialog_stub_weak
+  SceGxmInternalForTest_stub_weak
+  SceGpuEs4User_stub_weak
+  SceGpuEs4UserForVsh_stub_weak
+  SceCommonDialog_stub
   SceDbg_stub_weak
   SceFios2_stub_weak
   SceJpegUser_stub_weak
   SceJpegArm_stub_weak
   ScePgf_stub_weak
   ScePvf_stub_weak
-  SceLibm_stub_weak
   SceRtabi_stub_weak
   SceSharedFb_stub_weak
-  SceLibc_stub_weak
   SceThreadmgr_stub_weak
   SceModulemgr_stub_weak
   SceProcessmgr_stub_weak
   SceDmacmgr_stub_weak
-  
 )
-
-dolce_create_self(${PROJECT_NAME}.suprx ${PROJECT_NAME}
-  CONFIG ${CMAKE_SOURCE_DIR}/exports.yml
-  UNSAFE
-)
-
-dolce_create_stubs(${PROJECT_NAME}_stubs 
-  ${PROJECT_NAME} 
-  ${CMAKE_SOURCE_DIR}/exports.yml
-  LIB vita2d_sys_stub
-)
-

@@ -1,0 +1,106 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Project DefaultTargets="Build" ToolsVersion="15.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup Label="ProjectConfigurations">
+    <ProjectConfiguration Include="Debug|PSVita">
+      <Configuration>Debug</Configuration>
+      <Platform>PSVita</Platform>
+    </ProjectConfiguration>
+    <ProjectConfiguration Include="Release|PSVita">
+      <Configuration>Release</Configuration>
+      <Platform>PSVita</Platform>
+    </ProjectConfiguration>
+  </ItemGroup>
+  <PropertyGroup Label="Globals">
+    <ProjectGuid>{586F1763-A764-4BF9-B84A-F9F366252A72}</ProjectGuid>
+  </PropertyGroup>
+  <Import Project="$(VCTargetsPath)\Microsoft.Cpp.Default.props" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|PSVita'" Label="Configuration">
+    <ConfigurationType>DynamicLibrary</ConfigurationType>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|PSVita'" Label="Configuration">
+    <ConfigurationType>DynamicLibrary</ConfigurationType>
+  </PropertyGroup>
+  <Import Project="$(VCTargetsPath)\Microsoft.Cpp.props" />
+  <PropertyGroup Condition="'$(DebuggerFlavor)'=='PSVitaDebugger'" Label="OverrideDebuggerDefaults">
+    <!--LocalDebuggerCommand>$(TargetPath)</LocalDebuggerCommand-->
+    <!--LocalDebuggerReboot>false</LocalDebuggerReboot-->
+    <!--LocalDebuggerCommandArguments></LocalDebuggerCommandArguments-->
+    <!--LocalDebuggerTarget></LocalDebuggerTarget-->
+    <!--LocalDebuggerWorkingDirectory>$(ProjectDir)</LocalDebuggerWorkingDirectory-->
+    <!--LocalMappingFile></LocalMappingFile-->
+    <!--LocalRunCommandLine></LocalRunCommandLine-->
+  </PropertyGroup>
+  <ImportGroup Label="ExtensionSettings">
+  </ImportGroup>
+  <ImportGroup Label="PropertySheets" Condition="'$(Configuration)|$(Platform)'=='Debug|PSVita'">
+    <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
+  </ImportGroup>
+  <ImportGroup Label="PropertySheets" Condition="'$(Configuration)|$(Platform)'=='Release|PSVita'">
+    <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
+  </ImportGroup>
+  <PropertyGroup Label="UserMacros" />
+  <PropertyGroup />
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|PSVita'">
+    <ClCompile>
+      <PreprocessorDefinitions>_DEBUG;%(PreprocessorDefinitions);</PreprocessorDefinitions>
+      <GenerateDebugInformation>true</GenerateDebugInformation>
+      <PrecompiledHeader>NotUsing</PrecompiledHeader>
+      <AdditionalIncludeDirectories>$(ProjectDir)include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+    </ClCompile>
+  </ItemDefinitionGroup>
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|PSVita'">
+    <ClCompile>
+      <PreprocessorDefinitions>NDEBUG;VITA2D_SYS_PRX;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <OptimizationLevel>Level3</OptimizationLevel>
+      <PrecompiledHeader>NotUsing</PrecompiledHeader>
+      <AdditionalIncludeDirectories>$(SCE_PSP2_SDK_DIR)\target\include\vdsuite\user;$(SCE_PSP2_SDK_DIR)\target\include\vdsuite\common;$(ProjectDir)include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+    </ClCompile>
+    <Link>
+      <AdditionalDependencies>-lSceSysmem_stub_weak;-lSceDisplay_stub_weak;-lSceDisplayUser_stub_weak;-lSceSysmodule_stub_weak;-lSceIofilemgr_stub_weak;-lSceAppMgrUser_stub_weak;-lSceShellSvc_stub_weak;-lSceGxm_stub_weak;-lSceGxmInternal_stub_weak;-lSceGxmInternalForVsh_stub_weak;-lSceGxmInternalForTest_stub_weak;-lSceGpuEs4User_stub_weak;-lSceGpuEs4UserForVsh_stub_weak;-lSceCommonDialog_stub;-lSceDbg_stub_weak;-lSceFios2_stub_weak;-lSceJpegUser_stub_weak;-lSceJpegArm_stub_weak;-lScePgf_stub_weak;-lScePvf_stub_weak;-lSceRtabi_stub_weak;-lSceSharedFb_stub_weak;-lSceThreadmgr_stub_weak;-lSceModulemgr_stub_weak;-lSceProcessmgr_stub_weak;-lSceDmacmgr_stub_weak;-lScePng;-lSceDeflt;%(AdditionalDependencies)</AdditionalDependencies>
+    </Link>
+    <Link>
+      <AdditionalLibraryDirectories>$(SCE_PSP2_SDK_DIR)\target\lib\vdsuite;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
+      <InfoStripping>StripSymsAndDebug</InfoStripping>
+    </Link>
+  </ItemDefinitionGroup>
+  <ItemGroup>
+    <ClCompile Include="source\bin_packing_2d.c" />
+    <ClCompile Include="source\heap.c" />
+    <ClCompile Include="source\int_htab.c" />
+    <ClCompile Include="source\texture_atlas.c" />
+    <ClCompile Include="source\utils.c" />
+    <ClCompile Include="source\vita2d.c" />
+    <ClCompile Include="source\vita2d_draw.c" />
+    <ClCompile Include="source\vita2d_image_bmp.c" />
+    <ClCompile Include="source\vita2d_image_gim.c" />
+    <ClCompile Include="source\vita2d_image_gxt.c" />
+    <ClCompile Include="source\vita2d_image_jpeg.c" />
+    <ClCompile Include="source\vita2d_image_png.c">
+      <FileType>CppCode</FileType>
+    </ClCompile>
+    <ClCompile Include="source\vita2d_pgf.c" />
+    <ClCompile Include="source\vita2d_pvf.c" />
+    <ClCompile Include="source\vita2d_texture.c" />
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="include\bin_packing_2d.h" />
+    <ClInclude Include="include\heap.h" />
+    <ClInclude Include="include\int_htab.h" />
+    <ClInclude Include="include\pvr.h" />
+    <ClInclude Include="include\shader\compiled\clear_f_gxp.h" />
+    <ClInclude Include="include\shader\compiled\clear_v_gxp.h" />
+    <ClInclude Include="include\shader\compiled\color_f_gxp.h" />
+    <ClInclude Include="include\shader\compiled\color_v_gxp.h" />
+    <ClInclude Include="include\shader\compiled\texture_f_gxp.h" />
+    <ClInclude Include="include\shader\compiled\texture_tint_f_gxp.h" />
+    <ClInclude Include="include\shader\compiled\texture_v_gxp.h" />
+    <ClInclude Include="include\shared.h" />
+    <ClInclude Include="include\texture_atlas.h" />
+    <ClInclude Include="include\utils.h" />
+    <ClInclude Include="include\vita2d_sys.h" />
+  </ItemGroup>
+  <Import Condition="'$(ConfigurationType)' == 'Makefile' and Exists('$(VCTargetsPath)\Platforms\$(Platform)\SCE.Makefile.$(Platform).targets')" Project="$(VCTargetsPath)\Platforms\$(Platform)\SCE.Makefile.$(Platform).targets" />
+  <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
+  <ImportGroup Label="ExtensionTargets">
+  </ImportGroup>
+</Project>
