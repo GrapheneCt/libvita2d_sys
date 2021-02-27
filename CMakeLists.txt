@@ -22,7 +22,6 @@ include_directories(
 
 link_directories(
   ${VDSUITE_LIBRARY_DIRECTORIES}
-  libvita2d_sys/include
 )
 
 add_library(${PROJECT_NAME} STATIC
@@ -43,8 +42,6 @@ add_library(${PROJECT_NAME} STATIC
   libvita2d_sys/source/vita2d_pvf.c
 )
 
-add_definitions(-DVITA2D_SYS_PRX)
-
 add_library("${PROJECT_NAME}.suprx" SHARED
   libvita2d_sys/source/vita2d.c
   libvita2d_sys/source/heap.c
@@ -62,6 +59,8 @@ add_library("${PROJECT_NAME}.suprx" SHARED
   libvita2d_sys/source/vita2d_pgf.c
   libvita2d_sys/source/vita2d_pvf.c
 )
+
+target_compile_definitions("${PROJECT_NAME}.suprx" PUBLIC -DVITA2D_SYS_PRX)
 
 target_link_libraries("${PROJECT_NAME}.suprx"
   ScePng
