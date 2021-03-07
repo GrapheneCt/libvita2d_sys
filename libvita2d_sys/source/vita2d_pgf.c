@@ -65,7 +65,7 @@ static vita2d_pgf *vita2d_load_pgf_pre(int numFonts)
 	if (pgf_module_was_loaded != SCE_SYSMODULE_LOADED)
 		sceSysmoduleLoadModule(SCE_SYSMODULE_PGF);
 
-	unsigned int error;
+	SceFont_t_error error;
 	vita2d_pgf *font = heap_alloc_heap_memory(vita2d_heap_internal, sizeof(*font));
 	if (!font) {
 		SCE_DBG_LOG_ERROR("[PGF] sceClibMspaceMalloc() returned NULL");
@@ -103,7 +103,7 @@ vita2d_pgf *vita2d_load_system_pgf(int numFonts, const vita2d_system_pgf_config 
 		return NULL;
 	}
 
-	unsigned int error;
+	SceFont_t_error error;
 	int i;
 
 	vita2d_pgf *font = vita2d_load_pgf_pre(numFonts);
@@ -173,7 +173,7 @@ vita2d_pgf *vita2d_load_default_pgf()
 
 vita2d_pgf *vita2d_load_custom_pgf(const char *path)
 {
-	unsigned int error;
+	SceFont_t_error error;
 	vita2d_pgf *font = vita2d_load_pgf_pre(1);
 
 	if (!font) {
@@ -207,7 +207,7 @@ vita2d_pgf *vita2d_load_custom_pgf(const char *path)
 
 vita2d_pgf *vita2d_load_custom_pgf_buffer(void* buf, SceSize bufSize)
 {
-	unsigned int error;
+	SceFont_t_error error;
 	vita2d_pgf *font = vita2d_load_pgf_pre(1);
 
 	if (!font) {

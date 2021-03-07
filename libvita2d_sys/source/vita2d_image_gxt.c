@@ -121,7 +121,7 @@ vita2d_texture *vita2d_load_GXT_file(char *filename, int texture_index, vita2d_i
 	SceIoStat file_stat;
 	sceIoGetstat(filename, &file_stat);
 
-	ret = sceGxmAllocDeviceMemLinux(mem_type, SCE_GXM_MEMORY_ATTRIB_READ, file_stat.st_size, 4096, &texture->data_mem);
+	ret = sceGxmAllocDeviceMemLinux(mem_type, SCE_GXM_MEMORY_ATTRIB_READ, (SceSize)file_stat.st_size, 4096, &texture->data_mem);
 	if (ret < 0) {
 		SCE_DBG_LOG_ERROR("[GXT] sceGxmAllocDeviceMemLinux(): 0x%X", ret);
 		heap_free_heap_memory(vita2d_heap_internal, texture);
@@ -135,7 +135,7 @@ vita2d_texture *vita2d_load_GXT_file(char *filename, int texture_index, vita2d_i
 	if (fd < 0)
 		SCE_DBG_LOG_ERROR("[GXT] Can't open file %s sceIoOpen(): 0x%X", filename, ret);
 
-	read_size = sceIoRead(fd, texture->data_mem->mappedBase, file_stat.st_size);
+	read_size = sceIoRead(fd, texture->data_mem->mappedBase, (SceSize)file_stat.st_size);
 	sceIoClose(fd);
 
 	if (read_size != file_stat.st_size) {

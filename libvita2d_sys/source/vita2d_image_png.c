@@ -14,6 +14,8 @@ extern void* vita2d_heap_internal;
 
 vita2d_texture *vita2d_load_PNG_file(char *filename, vita2d_io_type io_type)
 {
+	SceUID streamBufMemblock = SCE_UID_INVALID_UID;
+	SceUID decBufMemblock = SCE_UID_INVALID_UID;
 	int ret;
 	SceSize totalBufSize;
 	unsigned char *pPng;
@@ -42,7 +44,7 @@ vita2d_texture *vita2d_load_PNG_file(char *filename, vita2d_io_type io_type)
 		isize = (SceSize)stat.st_size;
 	}
 
-	SceUID streamBufMemblock = sceKernelAllocMemBlock("pngdecStreamBuffer",
+	streamBufMemblock = sceKernelAllocMemBlock("pngdecStreamBuffer",
 		SCE_KERNEL_MEMBLOCK_TYPE_USER_RW, ALIGN(isize, 4 * 1024), NULL);
 
 	if (streamBufMemblock < 0)
@@ -70,13 +72,26 @@ vita2d_texture *vita2d_load_PNG_file(char *filename, vita2d_io_type io_type)
 	if (!check_free_memory(SCE_KERNEL_MEMBLOCK_TYPE_USER_RW, totalBufSize))
 		goto error_free_file_in_buf;
 
-	ret = sceGxmAllocDeviceMemLinux(SCE_GXM_DEVICE_HEAP_ID_USER_NC, SCE_GXM_MEMORY_ATTRIB_READ, totalBufSize, 4096, &texture->data_mem);
-	if (ret < 0) {
-		SCE_DBG_LOG_ERROR("[PNG] sceGxmAllocDeviceMemLinux(): 0x%X", ret);
-		goto error_free_file_in_buf;
-	}
+	if (outputFormat != SCE_PNG_FORMAT_RGBA8888) {
+		 decBufMemblock = sceKernelAllocMemBlock("pngdecDecBuffer",
+			SCE_KERNEL_MEMBLOCK_TYPE_USER_RW, totalBufSize, NULL);
 
-	texture_data = (unsigned char *)texture->data_mem->mappedBase;
+		 if (decBufMemblock < 0) {
+			 SCE_DBG_LOG_ERROR("[PNG] sceKernelAllocMemBlock(): 0x%X", decBufMemblock);
+			 goto error_free_file_in_buf;
+		 }
+
+		sceKernelGetMemBlockBase(decBufMemblock, &texture_data);
+	}
+	else {
+		ret = sceGxmAllocDeviceMemLinux(SCE_GXM_DEVICE_HEAP_ID_USER_NC, SCE_GXM_MEMORY_ATTRIB_READ, totalBufSize, 4096, &texture->data_mem);
+		if (ret < 0) {
+			SCE_DBG_LOG_ERROR("[PNG] sceGxmAllocDeviceMemLinux(): 0x%X", ret);
+			goto error_free_file_in_buf;
+		}
+
+		texture_data = (unsigned char *)texture->data_mem->mappedBase;
+	}
 
 	/*E Decode PNG stream */
 	ret = scePngDec(
@@ -97,6 +112,30 @@ vita2d_texture *vita2d_load_PNG_file(char *filename, vita2d_io_type io_type)
 	/*E Free file buffer */
 	if (streamBufMemblock >= 0) {
 		sceKernelFreeMemBlock(streamBufMemblock);
+		streamBufMemblock = SCE_UID_INVALID_UID;
+	}
+
+	if (outputFormat != SCE_PNG_FORMAT_RGBA8888) {
+
+		ret = sceGxmAllocDeviceMemLinux(SCE_GXM_DEVICE_HEAP_ID_USER_NC, SCE_GXM_MEMORY_ATTRIB_READ, ((width + 7) & ~7) * height * 4, 4096, &texture->data_mem);
+		if (ret < 0) {
+			SCE_DBG_LOG_ERROR("[PNG] sceGxmAllocDeviceMemLinux(): 0x%X", ret);
+			goto error_free_file_both_buf;
+		}
+
+		ret = scePngConvertToRGBA(texture->data_mem->mappedBase, texture_data, width, height, outputFormat);
+
+		if (decBufMemblock >= 0) {
+			sceKernelFreeMemBlock(decBufMemblock);
+			decBufMemblock = SCE_UID_INVALID_UID;
+		}
+
+		if (ret < 0) {
+			SCE_DBG_LOG_ERROR("[PNG] scePngConvertToRGBA(): 0x%X", ret);
+			goto error_free_file_both_buf;
+		}
+
+		texture_data = (unsigned char *)texture->data_mem->mappedBase;
 	}
 
 	/* Create the gxm texture */
@@ -108,12 +147,21 @@ vita2d_texture *vita2d_load_PNG_file(char *filename, vita2d_io_type io_type)
 		height,
 		0);
 
+	if (ret < 0) {
+		SCE_DBG_LOG_ERROR("[PNG] sceGxmTextureInitLinear(): 0x%X", ret);
+		goto error_free_file_both_buf;
+	}
+
 	return texture;
 
 error_free_file_both_buf:
 
 	/*E Free decoder buffer */
 	sceGxmFreeDeviceMemLinux(texture->data_mem);
+
+	if (decBufMemblock >= 0) {
+		sceKernelFreeMemBlock(decBufMemblock);
+	}
 
 error_free_file_in_buf:
 
@@ -127,12 +175,12 @@ error_free_file_in_buf:
 	return NULL;
 }
 
-vita2d_texture *vita2d_load_PNG_buffer(const void *buffer)
+vita2d_texture *vita2d_load_PNG_buffer(const void *buffer, unsigned long buffer_size)
 {
 	int ret;
 	SceSize totalBufSize;
 	unsigned char *pPng = (unsigned char *)buffer;
-	SceSize isize;
+	SceSize isize = buffer_size;
 	unsigned char *texture_data;
 	int width, height, outputFormat, streamFormat;
 

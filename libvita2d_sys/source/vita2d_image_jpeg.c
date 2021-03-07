@@ -454,7 +454,7 @@ vita2d_texture *vita2d_load_JPEG_file(char *filename, vita2d_io_type io_type, in
 	if (streamBufMemblock < 0)
 		return NULL;
 
-	sceKernelGetMemBlockBase(streamBufMemblock, (void **)&pJpeg);
+	sceKernelGetMemBlockBase(streamBufMemblock, &pJpeg);
 
 	/*E Read JPEG file to buffer. */
 	if (io_type)
@@ -491,7 +491,7 @@ vita2d_texture *vita2d_load_JPEG_file(char *filename, vita2d_io_type io_type, in
 	if (decCtrl.bufferMemBlock < 0)
 		goto error_free_file_hw_in_buf;
 
-	sceKernelGetMemBlockBase(decCtrl.bufferMemBlock, (void **)&pYCbCr);
+	sceKernelGetMemBlockBase(decCtrl.bufferMemBlock, &pYCbCr);
 
 	decCtrl.decodeBufSize = outputInfo.outputBufferSize;
 	decCtrl.coefBufSize = outputInfo.coefBufferSize;
@@ -706,7 +706,7 @@ vita2d_texture *vita2d_load_JPEG_buffer(const void *buffer, unsigned long buffer
 	if (streamBufMemblock < 0)
 		return NULL;
 
-	sceKernelGetMemBlockBase(streamBufMemblock, (void **)&pJpeg);
+	sceKernelGetMemBlockBase(streamBufMemblock, &pJpeg);
 
 	/*E Read JPEG buffer to buffer. */
 	sceClibMemcpy(pJpeg, buffer, isize);
@@ -740,7 +740,7 @@ vita2d_texture *vita2d_load_JPEG_buffer(const void *buffer, unsigned long buffer
 	if (decCtrl.bufferMemBlock < 0)
 		goto error_free_buf_hw_in_buf;
 
-	sceKernelGetMemBlockBase(decCtrl.bufferMemBlock, (void **)&pYCbCr);
+	sceKernelGetMemBlockBase(decCtrl.bufferMemBlock, &pYCbCr);
 
 	decCtrl.decodeBufSize = outputInfo.outputBufferSize;
 	decCtrl.coefBufSize = outputInfo.coefBufferSize;
@@ -985,7 +985,7 @@ vita2d_texture *vita2d_load_JPEG_ARM_file(char *filename, vita2d_io_type io_type
 	if (streamBufMemblock < 0)
 		return NULL;
 
-	sceKernelGetMemBlockBase(streamBufMemblock, (void **)&pJpeg);
+	sceKernelGetMemBlockBase(streamBufMemblock, &pJpeg);
 
 	/*E Read JPEG file to buffer. */
 	if (io_type)

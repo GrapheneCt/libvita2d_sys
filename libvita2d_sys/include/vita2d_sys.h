@@ -11,7 +11,7 @@
 extern "C" {
 #endif
 
-#define VITA2D_SYS_VERSION_INTERNAL 0144
+#define VITA2D_SYS_VERSION_INTERNAL 0145
 
 #ifndef VITA2D_SYS_VERSION
 #define VITA2D_SYS_VERSION VITA2D_SYS_VERSION_INTERNAL
@@ -877,7 +877,7 @@ PRX_INTERFACE vita2d_texture *vita2d_load_PNG_file(char *filename, vita2d_io_typ
  *
  * @return pointer to ::vita2d_texture, NULL on error.
  */
-PRX_INTERFACE vita2d_texture *vita2d_load_PNG_buffer(const void *buffer);
+PRX_INTERFACE vita2d_texture *vita2d_load_PNG_buffer(const void *buffer, unsigned long buffer_size);
 
 /*----------------------------------- JPEG functions -----------------------------------*/
 
