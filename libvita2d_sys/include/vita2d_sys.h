@@ -6,6 +6,7 @@
 #include <kernel.h>
 #include <font/libpgf.h>
 #include <font/libpvf.h>
+#include <scebase_common/scebase_target.h>
 
 #ifdef __cplusplus
 extern "C" {
