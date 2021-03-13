@@ -53,13 +53,6 @@ vita2d_JPEG_ARM_decoder_initialize();
 vita2d_JPEG_ARM_decoder_finish();
 ```
 
-## Changing internal heap size
-
-Default internal vita2d_sys heap size is set to 1MB. It can be changed with:
-```
-vita2d_set_heap_size(VITA2D_HEAP_SIZE);
-```
-
 ## Drawing process
 
 ```
