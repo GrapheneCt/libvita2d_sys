@@ -52,14 +52,3 @@ vita2d_JPEG_ARM_decoder_initialize();
 /* Load your JPEG textures here */
 vita2d_JPEG_ARM_decoder_finish();
 ```
-
-## Drawing process
-
-```
-vita2d_start_drawing();
-.
-.
-.
-vita2d_end_drawing();
-vita2d_end_shfb();
-```
