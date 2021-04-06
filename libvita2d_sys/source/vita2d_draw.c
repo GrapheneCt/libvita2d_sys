@@ -1,5 +1,6 @@
 #include <math.h>
 #include <sceconst.h>
+#include <libfpu.h>
 #include "vita2d_sys.h"
 #include "shared.h"
 
@@ -118,8 +119,8 @@ void vita2d_draw_fill_circle(float x, float y, float radius, unsigned int color)
 	indices[0] = 0;
 
 	float theta = 2 * SCE_MATH_PI / (float)num_segments;
-	float c = cosf(theta);
-	float s = sinf(theta);
+	float c = sceFpuCosf(theta);
+	float s = sceFpuSinf(theta);
 	float t;
 
 	float xx = radius;

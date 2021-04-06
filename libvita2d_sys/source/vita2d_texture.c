@@ -3,6 +3,7 @@
 #include <libdbg.h>
 #include <appmgr.h>
 #include <math.h>
+#include <libfpu.h>
 #include "vita2d_sys.h"
 
 #include "utils.h"
@@ -418,8 +419,8 @@ static inline void draw_texture_rotate_hotspot_generic(const vita2d_texture *tex
 	vertices[3].u = 1.0f;
 	vertices[3].v = 1.0f;
 
-	float c = cosf(rad);
-	float s = sinf(rad);
+	float c = sceFpuCosf(rad);
+	float s = sceFpuSinf(rad);
 	int i;
 	for (i = 0; i < 4; ++i) { // Rotate and translate
 		float _x = vertices[i].x;
@@ -664,8 +665,8 @@ static inline void draw_texture_scale_rotate_hotspot_generic(const vita2d_textur
 	vertices[3].u = 1.0f;
 	vertices[3].v = 1.0f;
 
-	float c = cosf(rad);
-	float s = sinf(rad);
+	float c = sceFpuCosf(rad);
+	float s = sceFpuSinf(rad);
 	int i;
 	for (i = 0; i < 4; ++i) { // Rotate and translate
 		float _x = vertices[i].x;
@@ -754,8 +755,8 @@ static inline void draw_texture_part_scale_rotate_generic(const vita2d_texture *
 	vertices[3].u = u1;
 	vertices[3].v = v1;
 
-	const float c = cosf(rad);
-	const float s = sinf(rad);
+	const float c = sceFpuCosf(rad);
+	const float s = sceFpuSinf(rad);
 	int i;
 	for (i = 0; i < 4; ++i) { // Rotate and translate
 		float _x = vertices[i].x;

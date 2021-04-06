@@ -12,6 +12,7 @@ add_compile_options(
 )
 
 add_link_options(
+  --no-required-files
   -s
 )
 
@@ -65,6 +66,7 @@ target_compile_definitions("${PROJECT_NAME}.suprx" PUBLIC -DVITA2D_SYS_PRX)
 target_link_libraries("${PROJECT_NAME}.suprx"
   ScePng
   SceDeflt
+  SceFpu
   SceSysmem_stub_weak
   SceDisplay_stub_weak
   SceDisplayUser_stub_weak

@@ -3,6 +3,7 @@
 #include <libdbg.h>
 #include <fios2.h>
 #include <appmgr.h>
+#include <libfpu.h>
 
 #include "utils.h"
 
@@ -86,8 +87,8 @@ void matrix_mult4x4(const float *src1, const float *src2, float *dst)
 
 void matrix_set_x_rotation(float *m, float rad)
 {
-	float c = cosf(rad);
-	float s = sinf(rad);
+	float c = sceFpuCosf(rad);
+	float s = sceFpuSinf(rad);
 
 	matrix_identity4x4(m);
 
@@ -99,8 +100,8 @@ void matrix_set_x_rotation(float *m, float rad)
 
 void matrix_set_y_rotation(float *m, float rad)
 {
-	float c = cosf(rad);
-	float s = sinf(rad);
+	float c = sceFpuCosf(rad);
+	float s = sceFpuSinf(rad);
 
 	matrix_identity4x4(m);
 
@@ -112,8 +113,8 @@ void matrix_set_y_rotation(float *m, float rad)
 
 void matrix_set_z_rotation(float *m, float rad)
 {
-	float c = cosf(rad);
-	float s = sinf(rad);
+	float c = sceFpuCosf(rad);
+	float s = sceFpuSinf(rad);
 
 	matrix_identity4x4(m);
 
@@ -235,7 +236,7 @@ void matrix_init_frustum(float *m, float left, float right, float bottom, float 
 
 void matrix_init_perspective(float *m, float fov, float aspect, float near, float far)
 {
-	float half_height = near * tan(DEG_TO_RAD(fov) * 0.5f);
+	float half_height = near * sceFpuTanf(DEG_TO_RAD(fov) * 0.5f);
 	float half_width = half_height * aspect;
 
 	matrix_init_frustum(m, -half_width, half_width, -half_height, half_height, near, far);

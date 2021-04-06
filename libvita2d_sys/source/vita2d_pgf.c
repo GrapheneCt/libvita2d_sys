@@ -71,21 +71,15 @@ static vita2d_pgf *vita2d_load_pgf_pre(int numFonts)
 		SCE_DBG_LOG_ERROR("[PGF] sceClibMspaceMalloc() returned NULL");
 		return NULL;
 	}
-	sceClibMemset(font, 0, sizeof(vita2d_pgf));
 
-	SceFont_t_initRec params = {
-		font,
-		numFonts,
-		NULL,
-		pgf_alloc_func,
-		pgf_free_func,
-		NULL,
-		NULL,
-		NULL,
-		NULL,
-		NULL,
-		NULL
-	};
+	sceClibMemset(font, 0, sizeof(vita2d_pgf));
+	SceFont_t_initRec params;
+	sceClibMemset(&params, 0, sizeof(SceFont_t_initRec));
+
+	params.userData = font;
+	params.maxNumFonts = numFonts;
+	params.allocFunc = pgf_alloc_func;
+	params.freeFunc = pgf_free_func;
 
 	font->lib_handle = sceFontNewLib(&params, &error);
 	if (error != 0) {

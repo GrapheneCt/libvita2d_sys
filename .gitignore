@@ -5,6 +5,7 @@
 
 # VDS
 *.vs
+build
 eboot.bin
 eboot2.bin
 param.sfo

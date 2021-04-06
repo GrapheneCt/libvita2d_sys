@@ -1832,3 +1832,22 @@ int vita2d_check_version(int vita2d_version)
 	else
 		return VITA2D_SYS_ERROR_VERSION_MISMATCH;
 }
+
+#ifdef VITA2D_SYS_PRX
+
+int __module_stop(SceSize argc, const void *args) {
+	sceClibPrintf("vita2d_sys module stop\n");
+	return SCE_KERNEL_STOP_SUCCESS;
+}
+
+int __module_exit() {
+	sceClibPrintf("vita2d_sys module exit\n");
+	return SCE_KERNEL_STOP_SUCCESS;
+}
+
+int __module_start(SceSize argc, void *args) {
+	sceClibPrintf("vita2d_sys module start, ver. %d\n", VITA2D_SYS_VERSION_INTERNAL);
+	return SCE_KERNEL_START_SUCCESS;
+}
+
+#endif

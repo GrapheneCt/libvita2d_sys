@@ -77,16 +77,13 @@ static vita2d_pvf *vita2d_load_pvf_pre(int numFonts)
 	}
 
 	sceClibMemset(font, 0, sizeof(vita2d_pvf));
+	ScePvf_t_initRec params;
+	sceClibMemset(&params, 0, sizeof(ScePvf_t_initRec));
 
-	ScePvf_t_initRec params = {
-		NULL,
-		numFonts,
-		NULL,
-		NULL,
-		pvf_alloc_func,
-		pvf_realloc_func,
-		pvf_free_func
-	};
+	params.maxNumFonts = numFonts;
+	params.allocFunc = pvf_alloc_func;
+	params.reallocFunc = pvf_realloc_func;
+	params.freeFunc = pvf_free_func;
 
 	font->lib_handle = scePvfNewLib(&params, &error);
 	if (error != 0) {
