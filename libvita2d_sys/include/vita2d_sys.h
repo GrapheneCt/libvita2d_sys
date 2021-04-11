@@ -1206,7 +1206,7 @@ PRX_INTERFACE vita2d_pvf *vita2d_load_system_shared_pvf(int numFonts, const vita
  *
  * @return pointer to ::vita2d_pvf, NULL on error.
  */
-vita2d_pvf *vita2d_load_default_pvf();
+PRX_INTERFACE vita2d_pvf *vita2d_load_default_pvf();
 
 /**
  * Load custom PVF, TTF or OTF font.
