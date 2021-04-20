@@ -31,31 +31,6 @@
 #define DISPLAY_BUFFER_COUNT		2
 #define DEFAULT_TEMP_POOL_SIZE		(1 * 1024 * 1024)
 
-typedef struct SceSharedFbInfo { // size is 0x58
-	void* frontBuffer;		// cdram base
-	int memsize;
-	void* backBuffer;		// cdram base
-	int unk_0C;
-	void *unk_10;
-	int unk_14;
-	int unk_18;
-	int unk_1C;
-	int unk_20;
-	int stride;		// 960
-	int width;		// 960
-	int height;		// 544
-	SceGxmColorFormat colorFormat;
-	int curbuf;
-	int unk_38;
-	int unk_3C;
-	int unk_40;
-	int unk_44;
-	int owner;
-	int unk_4C;
-	int unk_50;
-	int unk_54;
-} SceSharedFbInfo;
-
 typedef struct vita2d_display_data {
 	void *address;
 } vita2d_display_data;

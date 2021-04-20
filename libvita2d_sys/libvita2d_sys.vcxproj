@@ -50,7 +50,7 @@
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|PSVita'">
     <ClCompile>
-      <PreprocessorDefinitions>NDEBUG;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>NDEBUG;VITA2D_SYS_PRX;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <OptimizationLevel>Level3</OptimizationLevel>
       <PrecompiledHeader>NotUsing</PrecompiledHeader>
       <AdditionalIncludeDirectories>$(SCE_PSP2_SDK_DIR)\target\include\vdsuite\user;$(SCE_PSP2_SDK_DIR)\target\include\vdsuite\common;$(ProjectDir)include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
@@ -61,6 +61,7 @@
     <Link>
       <AdditionalLibraryDirectories>$(SCE_PSP2_SDK_DIR)\target\lib\vdsuite;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
       <InfoStripping>StripSymsAndDebug</InfoStripping>
+      <AdditionalOptions>--no-required-files</AdditionalOptions>
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
