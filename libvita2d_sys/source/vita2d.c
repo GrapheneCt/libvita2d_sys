@@ -808,7 +808,7 @@ static int vita2d_init_internal_common()
 			sceGxmAllocDeviceMemLinux(
 				SCE_GXM_DEVICE_HEAP_ID_CDRAM,
 				SCE_GXM_MEMORY_ATTRIB_READ | SCE_GXM_MEMORY_ATTRIB_WRITE,
-				4 * display_stride*display_vres,
+				4 * max_display_stride*max_display_vres,
 				SCE_GXM_COLOR_SURFACE_ALIGNMENT,
 				&displayBufferMem[i]);
 
@@ -821,9 +821,9 @@ static int vita2d_init_internal_common()
 				displayBufferData[i],
 				0,
 				0,
-				display_hres,
-				display_vres,
-				display_stride,
+				max_display_hres,
+				max_display_vres,
+				max_display_stride,
 				NULL,
 				0,
 				NULL);
@@ -865,8 +865,8 @@ static int vita2d_init_internal_common()
 	}
 
 	// compute the memory footprint of the depth buffer
-	const unsigned int alignedWidth = ALIGN(display_hres, SCE_GXM_TILE_SIZEX);
-	const unsigned int alignedHeight = ALIGN(display_vres, SCE_GXM_TILE_SIZEY);
+	const unsigned int alignedWidth = ALIGN(max_display_hres, SCE_GXM_TILE_SIZEX);
+	const unsigned int alignedHeight = ALIGN(max_display_vres, SCE_GXM_TILE_SIZEY);
 	unsigned int sampleCount = alignedWidth * alignedHeight;
 	unsigned int depthStrideInSamples = alignedWidth;
 	if (msaa_s == SCE_GXM_MULTISAMPLE_4X) {
@@ -1210,6 +1210,8 @@ int vita2d_display_set_resolution(int hRes, int vRes)
 		break;
 	}
 
+	matrix_init_orthographic(_vita2d_ortho_matrix, 0.0f, display_hres, display_vres, 0.0f, 0.0f, 1.0f);
+
 	validRegion.xMax = hRes - 1;
 	validRegion.yMax = vRes - 1;
 
@@ -1322,8 +1324,6 @@ int vita2d_fini()
 
 	for (i = 0; i < DISPLAY_BUFFER_COUNT; i++) {
 		if (!system_mode_flag) {
-			// clear the buffer then deallocate
-			sceDmacMemset(displayBufferData[i], 0, display_vres*display_stride * 4);
 			sceGxmFreeDeviceMemLinux(displayBufferMem[i]);
 
 			// destroy the sync object
