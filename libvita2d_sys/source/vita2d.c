@@ -41,24 +41,6 @@ extern int sceKernelIsGameBudget(void);
 
 /* Static variables */
 
-#ifdef RAZOR_SHAREDFB_COUNTER_FIX
-#include <taihen.h>
-#include <psp2/razor_capture.h>
-static unsigned int *razorFrameCounter;
-static unsigned int *razorIsInProgress;
-
-static SceUID razor_hook = -1;
-static tai_hook_ref_t razor_ref;
-
-int sceIoWrite_razorcapture_patched(SceUID fd, const void *data, SceSize size)
-{
-	if (size == 0x8)
-		*razorIsInProgress = 0;
-	return TAI_CONTINUE(int, razor_ref, fd, data, size);
-}
-
-#endif
-
 static SceSharedFbInfo info;
 
 static const SceGxmProgram *const clearVertexProgramGxp = (const SceGxmProgram*)clear_v_gxp;
@@ -139,6 +121,7 @@ static uint16_t *linearIndices = NULL;
 /* PVR */
 
 void *psDevData;
+void *phTransferContext;
 PVRSRVHeapInfoVita pvrsrvHeapInfo;
 int pvrsrvContextAttribs;
 
@@ -302,6 +285,8 @@ static void driver_bridge_init(void)
 	pvrsrvHeapInfo.vpbTiledHeapId = *(int *)(psDevData + 0xE8);
 
 	pvrsrvContextAttribs = *(int *)(psDevData + 0xF0);
+
+	phTransferContext = (psDevData + 0x100);
 }
 
 static int vita2d_setup_shaders(void)
@@ -584,28 +569,7 @@ static int vita2d_setup_shaders(void)
 	matrix_init_orthographic(_vita2d_ortho_matrix, 0.0f, display_hres, display_vres, 0.0f, 0.0f, 1.0f);
 
 	/* Wait if there are unfinished PTLA operations */
-	sceGxmTransferFinish();
-
-#ifdef RAZOR_SHAREDFB_COUNTER_FIX
-	tai_module_info_t tai_info;
-	tai_info.size = sizeof(tai_info);
-
-	if (taiGetModuleInfo("SceRazorCapture", &tai_info) >= 0) {
-
-		SceKernelModuleInfo mod_info;
-		mod_info.size = sizeof(SceKernelModuleInfo);
-		sceKernelGetModuleInfo(tai_info.modid, &mod_info);
-		uint32_t dataAddr = (uint32_t)mod_info.segments[1].vaddr;
-
-		razorFrameCounter = (uint32_t*)(dataAddr + 0x2C568);
-		razorIsInProgress = (uint32_t*)(dataAddr + 0x2C770);
-		*razorFrameCounter = 0;
-
-		razor_hook = taiHookFunctionImport(&razor_ref, "SceRazorCapture", 0xF2FF276E, 0x34EFD876, sceIoWrite_razorcapture_patched);
-
-		SCE_DBG_LOG_DEBUG("RAZOR_SHAREDFB_COUNTER_FIX is set to on");
-	}
-#endif
+	SGXWaitTransfer(psDevData, phTransferContext);
 
 	vita2d_initialized = 1;
 
@@ -1097,11 +1061,7 @@ int vita2d_init(vita2d_init_param *init_param)
 
 		vita2d_texture_set_heap_type(SCE_GXM_DEVICE_HEAP_ID_USER_NC);
 
-#ifdef RAZOR_SHAREDFB_COUNTER_FIX
-		err = sceGxmMapMemory(info.frontBuffer, info.memsize, SCE_GXM_MEMORY_ATTRIB_READ | SCE_GXM_MEMORY_ATTRIB_WRITE);
-#else
 		err = PVRSRVMapMemoryToGpu(psDevData, 2, 0, info.memsize, 0, info.frontBuffer, SCE_GXM_MEMORY_ATTRIB_READ | SCE_GXM_MEMORY_ATTRIB_WRITE | 0x100, NULL);
-#endif
 
 		if (err != SCE_OK) {
 			SCE_DBG_LOG_ERROR("sharedfb PVRSRVMapMemoryToGpu(): 0x%X", err);
@@ -1422,11 +1382,7 @@ int vita2d_fini()
 
 		SCE_DBG_LOG_DEBUG("System mode finalize");
 
-#ifdef RAZOR_SHAREDFB_COUNTER_FIX
-		err = sceGxmUnmapMemory(info.frontBuffer);
-#else
 		err = PVRSRVUnmapMemoryFromGpu(psDevData, info.frontBuffer, 0, 0);
-#endif
 
 		if (err != SCE_OK) {
 			SCE_DBG_LOG_ERROR("PVRSRVUnmapMemoryFromGpu(): 0x%X", err);
@@ -1569,11 +1525,6 @@ void vita2d_end_drawing()
 {
 	sceGxmEndScene(_vita2d_context, NULL, NULL);
 	sceGxmPadHeartbeat(&displaySurface[bufferIndex], displayBufferSync[bufferIndex]);
-
-#ifdef RAZOR_SHAREDFB_COUNTER_FIX
-	if (razor_hook > 0 && system_mode_flag)
-		*razorFrameCounter = *razorFrameCounter + 1;
-#endif
 
 	if (system_mode_flag && vblank_wait)
 		sceDisplayWaitVblankStart();

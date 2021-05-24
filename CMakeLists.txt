@@ -78,7 +78,6 @@ target_link_libraries("lib${PROJECT_NAME}.suprx"
   SceGxmInternal_stub_weak
   SceGxmInternalForVsh_stub_weak
   SceGxmInternalForTest_stub_weak
-  SceGpuEs4User_stub_weak
   SceGpuEs4UserForVsh_stub_weak
   SceCommonDialog_stub
   SceDbg_stub_weak
@@ -93,4 +92,5 @@ target_link_libraries("lib${PROJECT_NAME}.suprx"
   SceModulemgr_stub_weak
   SceProcessmgr_stub_weak
   SceDmacmgr_stub_weak
+  ${CMAKE_SOURCE_DIR}/libvita2d_sys/libSceGpuEs4User_v2ds_stub.a
 )
