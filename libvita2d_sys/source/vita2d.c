@@ -197,7 +197,6 @@ static int _vita2d_make_fragment_programs(vita2d_fragment_programs *out,
 	const SceGxmBlendInfo *blend_info, SceGxmMultisampleMode msaa)
 {
 	int err;
-	UNUSED(err);
 
 	err = sceGxmShaderPatcherCreateFragmentProgram(
 		shaderPatcher,
@@ -286,7 +285,7 @@ static void driver_bridge_init(void)
 
 	pvrsrvContextAttribs = *(int *)(psDevData + 0xF0);
 
-	phTransferContext = (psDevData + 0x100);
+	phTransferContext = *(void **)(psDevData + 0x100);
 }
 
 static int vita2d_setup_shaders(void)
@@ -582,7 +581,6 @@ static int vita2d_init_internal_common()
 {
 	int err;
 	unsigned int i;
-	UNUSED(err);
 
 	validRegion.xMax = display_hres - 1;
 	validRegion.yMax = display_vres - 1;
@@ -764,6 +762,8 @@ static int vita2d_init_internal_common()
 		goto _init_internal_common_error;
 	}
 
+	SGX_PSP2_CONTROL_STREAM trStream;
+
 	// allocate memory and sync objects for display buffers
 	for (i = 0; i < DISPLAY_BUFFER_COUNT; i++) {
 
@@ -772,25 +772,23 @@ static int vita2d_init_internal_common()
 			sceGxmAllocDeviceMemLinux(
 				SCE_GXM_DEVICE_HEAP_ID_CDRAM,
 				SCE_GXM_MEMORY_ATTRIB_READ | SCE_GXM_MEMORY_ATTRIB_WRITE,
-				4 * max_display_stride*max_display_vres,
+				4 * max_display_stride * max_display_vres,
 				SCE_GXM_COLOR_SURFACE_ALIGNMENT,
 				&displayBufferMem[i]);
 
 			displayBufferData[i] = displayBufferMem[i]->mappedBase;
 
 			// memset the buffer to black
-			sceGxmTransferFill(
-				0xff000000,
-				SCE_GXM_TRANSFER_FORMAT_U8U8U8U8_ABGR,
-				displayBufferData[i],
-				0,
-				0,
-				max_display_hres,
-				max_display_vres,
-				max_display_stride,
-				NULL,
-				0,
-				NULL);
+			trStream.uData.sFill.pSrcAddr = displayBufferData[i];
+			trStream.uData.sFill.pSrcAddr2 = displayBufferData[i];
+			trStream.uData.sFill.ui32SrcFormat = SCE_GXM_TRANSFER_FORMAT_U8U8U8U8_ABGR | 0x40000000 | max_display_stride & 0xffff;
+			trStream.uData.sFill.ui32SrcFormat2 = SCE_GXM_TRANSFER_FORMAT_U8U8U8U8_ABGR | 0x50000000 | max_display_stride & 0xffff;
+			trStream.uData.sFill.ui32ControlWords = 0x60000010;
+			trStream.uData.sFill.ui32FillColor = 0xFF000000;
+			trStream.uData.sFill.ui32SrcPixelOffset = 0;
+			trStream.uData.sFill.ui32SrcPixelSize = (max_display_hres & 0x1fff) << 0xd | max_display_vres;
+
+			SGXTransferControlStream(&trStream, 8, psDevData, phTransferContext, NULL, 0, 0, NULL);
 
 			// create a sync object that we will associate with this buffer
 			err = PVRSRVAllocSyncInfo(psDevData, &displayBufferSync[i]);
@@ -997,7 +995,6 @@ static int vita2d_init_internal_common_external(vita2d_init_param_external *init
 int vita2d_init(vita2d_init_param *init_param)
 {
 	int err;
-	UNUSED(err);
 
 	if (vita2d_initialized) {
 		SCE_DBG_LOG_WARNING("libvita2d is already initialized!");
@@ -1099,7 +1096,6 @@ int vita2d_init(vita2d_init_param *init_param)
 int vita2d_init_external(vita2d_init_param_external *init_param)
 {
 	int err;
-	UNUSED(err);
 
 	if (vita2d_initialized) {
 		SCE_DBG_LOG_WARNING("libvita2d is already initialized!");
@@ -1222,7 +1218,6 @@ int vita2d_fini()
 {
 	unsigned int i;
 	int err;
-	UNUSED(err);
 
 	if (!vita2d_initialized) {
 		SCE_DBG_LOG_WARNING("libvita2d is not initialized!");

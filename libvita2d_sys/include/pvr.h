@@ -109,4 +109,49 @@ int PVRSRVAllocDeviceMem(
 
 int PVRSRVFreeDeviceMem(void *psDevData, PVRSRVMemInfoVita *psMemInfo);
 
+typedef struct _SGXTQ_PSP2_DOWNSCALEOP_
+{
+	uint32_t ui32SrcFormat;
+	void*  pSrcAddr;
+	uint32_t ui32SrcPixelOffset;
+	uint32_t ui32SrcPixelSize;
+	uint32_t ui32DstFormat;
+	void*  pDstAddr;
+	uint32_t ui32ControlWords;
+	uint32_t ui32DstPixelOffset;
+	uint32_t ui3DstPixelSize;
+} SGXTQ_PSP2_DOWNSCALEOP;
+
+typedef struct _SGXTQ_PSP2_FILLOP_
+{
+	uint32_t ui32SrcFormat;
+	void*  pSrcAddr;
+	uint32_t ui32SrcFormat2;
+	void*  pSrcAddr2;
+	uint32_t ui32ControlWords;
+	uint32_t ui32FillColor;
+	uint32_t ui32SrcPixelOffset;
+	uint32_t ui32SrcPixelSize;
+} SGXTQ_PSP2_FILLOP;
+
+typedef struct _SGX_PSP2_CONTROL_STREAM_
+{
+	union {
+		SGXTQ_PSP2_DOWNSCALEOP	sDownscale;
+		SGXTQ_PSP2_FILLOP		sFill;
+	} uData;
+} SGX_PSP2_CONTROL_STREAM;
+
+int SGXTransferControlStream(
+	SGX_PSP2_CONTROL_STREAM *psControlStream,
+	uint32_t ui32ControlStreamWords,
+	void* psDevData,
+	void* hTransferContext,
+	void* hSyncObj,
+	uint32_t ui32SyncFlags,
+	uint32_t ui32SyncFlags2,
+	void* hNotification);
+
+int SGXWaitTransfer(void *psDevData, void *phTransferContext);
+
 #endif
